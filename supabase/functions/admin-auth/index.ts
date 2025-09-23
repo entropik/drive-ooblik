@@ -72,9 +72,28 @@ serve(async (req: Request) => {
         );
       }
 
-      // Génération du token de session admin
+      // Génération du token de session admin sécurisé
       const sessionToken = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + 8 * 60 * 60 * 1000); // 8h
+
+      // Création de la session en base de données
+      const { error: sessionError } = await supabase
+        .from('admin_sessions')
+        .insert({
+          admin_user_id: admin.id,
+          session_token: sessionToken,
+          expires_at: expiresAt.toISOString(),
+          ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+          user_agent: req.headers.get('user-agent') || 'unknown'
+        });
+
+      if (sessionError) {
+        console.error('Erreur création session:', sessionError);
+        return new Response(
+          JSON.stringify({ error: 'Erreur interne du serveur' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
 
       // Mise à jour du dernier login
       await supabase
@@ -82,10 +101,10 @@ serve(async (req: Request) => {
         .update({ last_login_at: new Date().toISOString() })
         .eq('id', admin.id);
 
-      // Log de l'événement
+      // Log de l'événement (sans exposer le token)
       await supabase.from('logs').insert({
         event_type: 'auth',
-        details: { action: 'admin_login', username },
+        details: { action: 'admin_login', username, admin_user_id: admin.id },
         ip_address: req.headers.get('x-forwarded-for') || 'unknown',
         user_agent: req.headers.get('user-agent') || 'unknown'
       });
@@ -122,6 +141,23 @@ serve(async (req: Request) => {
 
   // Route: POST /admin-auth/logout
   if (req.method === 'POST' && path.includes('/logout')) {
+    const cookie = req.headers.get('cookie');
+    const sessionToken = cookie?.split('admin_session=')[1]?.split(';')[0];
+
+    // Révoquer la session en base si elle existe
+    if (sessionToken) {
+      try {
+        const { error } = await supabase.rpc('revoke_admin_session', {
+          session_token: sessionToken
+        });
+        if (error) {
+          console.error('Erreur révocation session:', error);
+        }
+      } catch (error) {
+        console.error('Erreur révocation session:', error);
+      }
+    }
+
     return new Response(
       JSON.stringify({ success: true, message: 'Déconnexion réussie' }),
       { 
@@ -147,20 +183,47 @@ serve(async (req: Request) => {
       );
     }
 
-    // En production, vous devriez stocker les sessions en base ou Redis
-    // Pour cette démo, on accepte tout token UUID valide
-    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-    if (!uuidRegex.test(sessionToken)) {
+    try {
+      // Vérification sécurisée de la session en base
+      const { data: sessionData, error } = await supabase.rpc('verify_admin_session', {
+        session_token: sessionToken
+      });
+
+      if (error) {
+        console.error('Erreur vérification session:', error);
+        return new Response(
+          JSON.stringify({ error: 'Erreur interne du serveur' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      const session = sessionData?.[0];
+      if (!session || !session.is_valid) {
+        return new Response(
+          JSON.stringify({ error: 'Session invalide ou expirée' }),
+          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
       return new Response(
-        JSON.stringify({ error: 'Session invalide' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true, 
+          message: 'Session valide',
+          user: {
+            id: session.admin_user_id,
+            username: session.username
+          }
+        }),
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+
+    } catch (error) {
+      console.error('Erreur vérification session:', error);
+      return new Response(
+        JSON.stringify({ error: 'Erreur interne du serveur' }),
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
-
-    return new Response(
-      JSON.stringify({ success: true, message: 'Session valide' }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   }
 
   return new Response('Not Found', { status: 404, headers: corsHeaders });

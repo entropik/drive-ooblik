@@ -6,11 +6,15 @@ import FilesTab from "@/components/Admin/FilesTab";
 import LogsTab from "@/components/Admin/LogsTab";  
 import DiagnosticTab from "@/components/Admin/DiagnosticTab";
 import AdminLogin from "@/components/Admin/AdminLogin";
+import SessionExpiredDialog from "@/components/Admin/SessionExpiredDialog";
+import { toast } from "sonner";
 
 const Admin = () => {
   const [activeTab, setActiveTab] = useState<"config" | "files" | "logs" | "diagnostic">("config");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const [sessionExpirationTime, setSessionExpirationTime] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -19,19 +23,38 @@ const Admin = () => {
 
   const checkAuthStatus = async () => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-auth/verify`, {
+      const response = await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/admin-auth/verify`, {
         method: 'GET',
         credentials: 'include',
         headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
         }
       });
 
       if (response.ok) {
+        const data = await response.json();
         setIsAuthenticated(true);
+        setSessionExpired(false);
+        
+        // Si la réponse contient les infos de session, les stocker
+        if (data.user) {
+          // Optionnel: stocker les infos utilisateur pour l'affichage
+          console.log('Session valide pour:', data.user.username);
+        }
+      } else {
+        const errorData = await response.json();
+        if (response.status === 401) {
+          setSessionExpired(true);
+          setIsAuthenticated(false);
+          if (errorData.error?.includes('expirée')) {
+            toast.error("Votre session a expiré, veuillez vous reconnecter");
+          }
+        }
       }
     } catch (error) {
       console.error('Erreur vérification auth:', error);
+      setSessionExpired(true);
+      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }
@@ -39,23 +62,33 @@ const Admin = () => {
 
   const handleLoginSuccess = () => {
     setIsAuthenticated(true);
+    setSessionExpired(false);
+    setSessionExpirationTime(null);
   };
 
   const handleLogout = async () => {
     try {
-      await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-auth/logout`, {
+      await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/admin-auth/logout`, {
         method: 'POST',
         credentials: 'include',
         headers: {
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
         }
       });
     } catch (error) {
       console.error('Erreur logout:', error);
     } finally {
       setIsAuthenticated(false);
+      setSessionExpired(false);
+      setSessionExpirationTime(null);
       navigate('/');
     }
+  };
+
+  const handleSessionExpiredClose = () => {
+    setSessionExpired(false);
+    setIsAuthenticated(false);
+    setSessionExpirationTime(null);
   };
 
   if (isLoading) {
@@ -67,7 +100,16 @@ const Admin = () => {
   }
 
   if (!isAuthenticated) {
-    return <AdminLogin onSuccess={handleLoginSuccess} />;
+    return (
+      <>
+        <AdminLogin onSuccess={handleLoginSuccess} />
+        <SessionExpiredDialog 
+          isOpen={sessionExpired}
+          onClose={handleSessionExpiredClose}
+          expirationTime={sessionExpirationTime || undefined}
+        />
+      </>
+    );
   }
 
   const renderContent = () => {

@@ -26,12 +26,12 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-auth`, {
+      const response = await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/admin-auth`, {
         method: 'POST',
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
         },
         body: JSON.stringify({ username, password })
       });
@@ -121,10 +121,10 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
             </Button>
           </form>
 
+          {/* Credentials de démo supprimés pour la sécurité */}
           <div className="mt-6 p-4 bg-muted rounded-lg">
             <p className="text-xs text-muted-foreground text-center">
-              <strong>Compte de démonstration :</strong><br/>
-              Utilisateur: admin / Mot de passe: admin123
+              Contactez votre administrateur système pour obtenir vos identifiants d'accès.
             </p>
           </div>
         </CardContent>
