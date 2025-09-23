@@ -69,7 +69,7 @@ export default function UploadZone() {
       'image/*': ['.jpg', '.jpeg', '.png', '.pdf'],
       'application/pdf': ['.pdf'],
     },
-    maxSize: 1024 * 1024 * 1024, // 1GB
+    // Aucune limite de taille pour permettre les gros fichiers (500MB+)
   });
 
   const getFileIcon = (file: File) => {
@@ -109,7 +109,7 @@ export default function UploadZone() {
             ou <span className="text-primary font-medium">cliquez pour parcourir</span>
           </p>
           <div className="text-sm text-muted-foreground">
-            Formats supportés: PDF, JPG, PNG • Taille max: 1GB par fichier
+            Formats supportés: PDF, JPG, PNG • Aucune limite de taille
           </div>
         </div>
       </Card>

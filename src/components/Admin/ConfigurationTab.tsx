@@ -20,7 +20,7 @@ export default function ConfigurationTab() {
     awsRegion: "eu-west-1",
     bucketName: "",
     enableMultipart: true,
-    maxFileSize: "1024",
+    maxFileSize: "illimité",  // Aucune limite pour les gros fichiers
     allowedTypes: "pdf,jpg,jpeg,png",
   });
 
@@ -160,7 +160,7 @@ export default function ConfigurationTab() {
               <div className="space-y-0.5">
                 <Label>Upload multipart</Label>
                 <p className="text-sm text-muted-foreground">
-                  Permet l'upload de fichiers volumineux (&gt;100MB)
+                  Permet l'upload de fichiers très volumineux (500MB+ sans limite)
                 </p>
               </div>
               <Switch
@@ -173,13 +173,18 @@ export default function ConfigurationTab() {
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="maxSize">Taille max par fichier (MB)</Label>
+                <Label htmlFor="maxSize">Limite de taille par fichier</Label>
                 <Input
                   id="maxSize"
-                  type="number"
+                  type="text"
                   value={config.maxFileSize}
-                  onChange={(e) => setConfig({...config, maxFileSize: e.target.value})}
+                  readOnly
+                  placeholder="Aucune limite configurée"
+                  className="bg-muted"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Aucune limite de taille appliquée pour permettre les très gros fichiers
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="allowedTypes">Types de fichiers autorisés</Label>

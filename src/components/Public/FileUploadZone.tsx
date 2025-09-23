@@ -126,7 +126,7 @@ const FileUploadZone = ({ magicToken, onComplete }: FileUploadZoneProps) => {
     onDragEnter: () => setIsDragging(true),
     onDragLeave: () => setIsDragging(false),
     multiple: true,
-    maxSize: 100 * 1024 * 1024, // 100MB
+    // Aucune limite de taille pour permettre les gros fichiers (500MB+)
   });
 
   const completedFiles = files.filter(f => f.status === 'completed');
@@ -163,7 +163,7 @@ const FileUploadZone = ({ magicToken, onComplete }: FileUploadZoneProps) => {
                 }
               </CardTitle>
               <CardDescription>
-                Formats acceptés : JPG, PNG, PDF, DOC, ZIP... (max 100MB)
+                Formats acceptés : JPG, PNG, PDF, DOC, ZIP... (aucune limite de taille)
               </CardDescription>
             </CardContent>
           </div>

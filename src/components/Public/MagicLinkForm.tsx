@@ -127,7 +127,7 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
           <div className="mt-6 p-4 bg-muted rounded-lg">
             <h3 className="font-semibold text-sm mb-2">Règles d'upload :</h3>
             <ul className="text-xs text-muted-foreground space-y-1">
-              <li>• Taille max : 100 MB par fichier</li>
+              <li>• Aucune limite de taille par fichier</li>
               <li>• Extensions : JPG, PNG, PDF, DOC, ZIP...</li>
               <li>• Quota total : 10 GB par espace</li>
               <li>• Reprise d'upload automatique</li>
