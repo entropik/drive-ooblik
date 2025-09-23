@@ -33,19 +33,28 @@ const FileUploadZone = ({ magicToken, onComplete }: FileUploadZoneProps) => {
       status: 'pending' as const
     }));
 
-    setFiles(prev => [...prev, ...newFiles]);
-    
-    // Démarrer l'upload pour chaque fichier
-    newFiles.forEach(uploadFile => {
-      simulateUpload(uploadFile.id);
+    setFiles(prev => {
+      const updatedFiles = [...prev, ...newFiles];
+      
+      // Démarrer l'upload pour chaque nouveau fichier
+      newFiles.forEach(uploadFile => {
+        setTimeout(() => simulateUpload(uploadFile.id, updatedFiles), 0);
+      });
+      
+      return updatedFiles;
     });
   }, []);
 
-  const simulateUpload = async (fileId: string) => {
-    const fileIndex = files.findIndex(f => f.id === fileId);
-    if (fileIndex === -1) return;
+  const simulateUpload = async (fileId: string, currentFiles?: UploadFile[]) => {
+    // Utiliser les fichiers passés en paramètre ou l'état actuel
+    const filesToUse = currentFiles || files;
+    const fileIndex = filesToUse.findIndex(f => f.id === fileId);
+    if (fileIndex === -1) {
+      console.error('Fichier non trouvé:', fileId);
+      return;
+    }
 
-    const file = files[fileIndex];
+    const file = filesToUse[fileIndex];
     
     try {
       // Étape 1: Initialiser l'upload
@@ -53,11 +62,11 @@ const FileUploadZone = ({ magicToken, onComplete }: FileUploadZoneProps) => {
         f.id === fileId ? { ...f, status: 'uploading' } : f
       ));
 
-      const initResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/upload-init`, {
+      const initResponse = await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/upload-init`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
           'x-magic-token': magicToken
         },
         body: JSON.stringify({
@@ -115,10 +124,15 @@ const FileUploadZone = ({ magicToken, onComplete }: FileUploadZoneProps) => {
   };
 
   const retryUpload = (fileId: string) => {
-    setFiles(prev => prev.map(f => 
-      f.id === fileId ? { ...f, status: 'pending', progress: 0, error: undefined } : f
-    ));
-    simulateUpload(fileId);
+    setFiles(prev => {
+      const updatedFiles = prev.map(f => 
+        f.id === fileId ? { ...f, status: 'pending' as const, progress: 0, error: undefined } : f
+      );
+      
+      setTimeout(() => simulateUpload(fileId, updatedFiles), 0);
+      
+      return updatedFiles;
+    });
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
