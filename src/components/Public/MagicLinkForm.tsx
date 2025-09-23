@@ -26,11 +26,11 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/auth-magic-link`, {
+      const response = await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/auth-magic-link`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'apikey': import.meta.env.VITE_SUPABASE_ANON_KEY,
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
         },
         body: JSON.stringify({
           email,
@@ -45,7 +45,19 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
         throw new Error(data.error || 'Erreur lors de la demande');
       }
 
-      toast.success("Lien d'accès envoyé ! Vérifiez votre email.");
+      if (data.magic_link) {
+        // En développement, on affiche le lien directement
+        toast.success(`Lien d'accès généré ! Cliquez ici pour y accéder : ${data.magic_link}`, {
+          duration: 10000,
+          action: {
+            label: "Copier le lien",
+            onClick: () => navigator.clipboard.writeText(data.magic_link)
+          }
+        });
+      } else {
+        toast.success("Lien d'accès envoyé ! Vérifiez votre email.");
+      }
+      
       onSuccess({ email, space_name: spaceName, token: data.magic_token });
 
     } catch (error) {
@@ -92,17 +104,23 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
             <div className="space-y-2">
               <Label htmlFor="space" className="flex items-center gap-2">
                 <Shield className="h-4 w-4" />
-                Nom de l'espace
+                Nom du projet d'impression
               </Label>
               <Input
                 id="space"
                 type="text"
-                placeholder="Mon espace de transfert"
+                placeholder="Catalogue 2024, Cartes de visite..."
                 value={spaceName}
                 onChange={(e) => setSpaceName(e.target.value)}
                 required
                 className="w-full"
               />
+              <p className="text-xs text-muted-foreground flex items-center gap-1">
+                <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                </svg>
+                Donnez un nom parlant à votre projet pour le retrouver facilement
+              </p>
             </div>
 
             <Button

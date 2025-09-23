@@ -168,7 +168,8 @@ serve(async (req: Request) => {
         success: true, 
         message: 'Lien d\'accès envoyé par email',
         // En dev, on retourne le token pour faciliter les tests
-        ...(Deno.env.get('NODE_ENV') === 'development' && { magic_token: magicToken })
+        magic_token: magicToken,
+        magic_link: `${Deno.env.get('SUPABASE_URL')}/functions/v1/auth-consume?token=${magicToken}`
       }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
