@@ -97,7 +97,7 @@ serve(async (req: Request) => {
           admin_user_id: admin.id,
           session_token: sessionToken,
           expires_at: expiresAt.toISOString(),
-          ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+          ip_address: req.headers.get('x-forwarded-for') || null,
           user_agent: req.headers.get('user-agent') || 'unknown'
         });
 
@@ -119,7 +119,7 @@ serve(async (req: Request) => {
       await supabase.from('logs').insert({
         event_type: 'auth',
         details: { action: 'admin_login', username, admin_user_id: admin.id },
-        ip_address: req.headers.get('x-forwarded-for') || 'unknown',
+        ip_address: req.headers.get('x-forwarded-for') || null,
         user_agent: req.headers.get('user-agent') || 'unknown'
       });
 
