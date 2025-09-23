@@ -17,7 +17,7 @@ All colors MUST be HSL.
     --popover: 0 0% 100%;
     --popover-foreground: 213 31% 27%;
 
-    --primary: 221 83% 53%;
+    --primary: 0 100% 50%;
     --primary-foreground: 0 0% 98%;
 
     --secondary: 210 40% 96%;
@@ -34,7 +34,7 @@ All colors MUST be HSL.
 
     --border: 220 13% 91%;
     --input: 220 13% 91%;
-    --ring: 221 83% 53%;
+    --ring: 0 100% 50%;
 
     --success: 142 71% 45%;
     --success-foreground: 0 0% 98%;
@@ -48,11 +48,11 @@ All colors MUST be HSL.
     --admin-sidebar: 213 31% 20%;
     --admin-header: 0 0% 100%;
     
-    --upload-zone: 221 83% 97%;
-    --upload-zone-border: 221 83% 85%;
+    --upload-zone: 0 100% 97%;
+    --upload-zone-border: 0 100% 85%;
     
     --progress-bg: 220 14.3% 95.9%;
-    --progress-fill: 221 83% 53%;
+    --progress-fill: 0 100% 50%;
 
     --radius: 0.5rem;
 

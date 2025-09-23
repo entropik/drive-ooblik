@@ -8,38 +8,49 @@ import {
   Upload
 } from "lucide-react";
 
+import { LogOut } from "lucide-react";
+import { Button } from "@/components/ui/button";
+
 interface AdminLayoutProps {
   children: ReactNode;
-  activeTab: "config" | "files" | "logs" | "diagnostic" | "upload";
-  onTabChange: (tab: "config" | "files" | "logs" | "diagnostic" | "upload") => void;
+  activeTab: "config" | "files" | "logs" | "diagnostic";
+  onTabChange: (tab: "config" | "files" | "logs" | "diagnostic") => void;
+  onLogout?: () => void;
 }
 
 const tabs = [
-  { id: "upload" as const, label: "Espace Client", icon: Upload },
   { id: "config" as const, label: "Configuration", icon: Settings },
   { id: "files" as const, label: "Fichiers", icon: FileText },
   { id: "logs" as const, label: "Logs", icon: Activity },
   { id: "diagnostic" as const, label: "Diagnostic", icon: Stethoscope },
 ];
 
-export default function AdminLayout({ children, activeTab, onTabChange }: AdminLayoutProps) {
+export default function AdminLayout({ children, activeTab, onTabChange, onLogout }: AdminLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header className="bg-admin-header border-b border-border px-6 py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <div className="w-8 h-8 bg-primary rounded flex items-center justify-center">
-              <Upload className="h-5 w-5 text-primary-foreground" />
-            </div>
-            <div>
-              <h1 className="text-lg font-semibold text-foreground">Ooblik S3 Manager</h1>
-              <p className="text-sm text-muted-foreground">Gestionnaire de fichiers volumineux</p>
-            </div>
+          <div>
+            <h1 className="text-2xl font-bold text-foreground">
+              Ooblik S3 Manager - Administration
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Version 1.0.0 • Back-office sécurisé
+            </p>
           </div>
-          <div className="text-sm text-muted-foreground">
-            Version 1.0.0
-          </div>
+          
+          {onLogout && (
+            <Button
+              onClick={onLogout}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <LogOut className="h-4 w-4" />
+              Déconnexion
+            </Button>
+          )}
         </div>
       </header>
 

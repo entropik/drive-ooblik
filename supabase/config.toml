@@ -1,1 +1,13 @@
 project_id = "khygjfhrmnwtigqtdmgm"
+
+[functions.auth-magic-link]
+verify_jwt = false
+
+[functions.auth-consume]
+verify_jwt = false
+
+[functions.upload-init]
+verify_jwt = false
+
+[functions.admin-auth]
+verify_jwt = false

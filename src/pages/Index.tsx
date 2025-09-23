@@ -1,45 +1,62 @@
-import { useState } from "react";
-import AdminLayout from "@/components/Layout/AdminLayout";
-import UploadZone from "@/components/FileUpload/UploadZone";
-import ConfigurationTab from "@/components/Admin/ConfigurationTab";
-import FilesTab from "@/components/Admin/FilesTab";
-import LogsTab from "@/components/Admin/LogsTab";
-import DiagnosticTab from "@/components/Admin/DiagnosticTab";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
+import MagicLinkForm from "@/components/Public/MagicLinkForm";
+import FileUploadZone from "@/components/Public/FileUploadZone";
 
 const Index = () => {
-  const [activeTab, setActiveTab] = useState<"config" | "files" | "logs" | "diagnostic" | "upload">("upload");
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userSession, setUserSession] = useState<{
+    email: string;
+    space_name: string;
+    token: string;
+  } | null>(null);
+  const location = useLocation();
 
-  const renderContent = () => {
-    switch (activeTab) {
-      case "upload":
-        return (
-          <div className="max-w-4xl">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold">Espace Client</h2>
-              <p className="text-muted-foreground">
-                Téléchargez vos fichiers PDF et images de manière sécurisée.
-              </p>
-            </div>
-            <UploadZone />
-          </div>
-        );
-      case "config":
-        return <ConfigurationTab />;
-      case "files":
-        return <FilesTab />;
-      case "logs":
-        return <LogsTab />;
-      case "diagnostic":
-        return <DiagnosticTab />;
-      default:
-        return null;
+  useEffect(() => {
+    // Vérifier si on arrive via un lien magic
+    const urlParams = new URLSearchParams(location.search);
+    const token = urlParams.get('token');
+    const space = urlParams.get('space');
+    
+    if (token && space) {
+      // Simuler l'authentification réussie
+      setUserSession({
+        email: 'user@example.com', // En réalité, récupéré depuis l'API
+        space_name: decodeURIComponent(space),
+        token
+      });
+      setIsAuthenticated(true);
+      
+      // Nettoyer l'URL
+      window.history.replaceState({}, '', '/');
+    }
+  }, [location]);
+
+  const handleMagicLinkSuccess = (data: { email: string; space_name: string; token?: string }) => {
+    if (data.token) {
+      // En développement, on peut utiliser le token directement
+      setUserSession({
+        email: data.email,
+        space_name: data.space_name,
+        token: data.token
+      });
+      setIsAuthenticated(true);
     }
   };
 
+  const handleUploadComplete = (files: any[]) => {
+    console.log('Upload terminé:', files);
+  };
+
+  if (!isAuthenticated || !userSession) {
+    return <MagicLinkForm onSuccess={handleMagicLinkSuccess} />;
+  }
+
   return (
-    <AdminLayout activeTab={activeTab} onTabChange={setActiveTab}>
-      {renderContent()}
-    </AdminLayout>
+    <FileUploadZone 
+      magicToken={userSession.token}
+      onComplete={handleUploadComplete}
+    />
   );
 };
 

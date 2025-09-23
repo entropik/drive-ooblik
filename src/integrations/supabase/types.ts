@@ -14,7 +14,191 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      admin_users: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          last_login_at: string | null
+          password_hash: string
+          updated_at: string
+          username: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          password_hash: string
+          updated_at?: string
+          username: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          last_login_at?: string | null
+          password_hash?: string
+          updated_at?: string
+          username?: string
+        }
+        Relationships: []
+      }
+      config: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: Json | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: Json | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: Json | null
+        }
+        Relationships: []
+      }
+      files: {
+        Row: {
+          checksum: string | null
+          completed_at: string | null
+          created_at: string
+          file_size: number
+          id: string
+          mime_type: string | null
+          original_name: string
+          s3_key: string
+          space_id: string | null
+          upload_id: string | null
+          upload_status: string | null
+        }
+        Insert: {
+          checksum?: string | null
+          completed_at?: string | null
+          created_at?: string
+          file_size: number
+          id?: string
+          mime_type?: string | null
+          original_name: string
+          s3_key: string
+          space_id?: string | null
+          upload_id?: string | null
+          upload_status?: string | null
+        }
+        Update: {
+          checksum?: string | null
+          completed_at?: string | null
+          created_at?: string
+          file_size?: number
+          id?: string
+          mime_type?: string | null
+          original_name?: string
+          s3_key?: string
+          space_id?: string | null
+          upload_id?: string | null
+          upload_status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "files_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          file_id: string | null
+          id: string
+          ip_address: unknown | null
+          space_id: string | null
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          file_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          space_id?: string | null
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          file_id?: string | null
+          id?: string
+          ip_address?: unknown | null
+          space_id?: string | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "logs_file_id_fkey"
+            columns: ["file_id"]
+            isOneToOne: false
+            referencedRelation: "files"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spaces: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          is_authenticated: boolean | null
+          magic_token: string | null
+          space_name: string
+          token_expires_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          is_authenticated?: boolean | null
+          magic_token?: string | null
+          space_name: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          is_authenticated?: boolean | null
+          magic_token?: string | null
+          space_name?: string
+          token_expires_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
