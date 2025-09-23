@@ -23,11 +23,12 @@ const Admin = () => {
 
   const checkAuthStatus = async () => {
     try {
+      const token = localStorage.getItem('admin_session');
       const response = await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/admin-auth/verify`, {
         method: 'GET',
-        credentials: 'include',
         headers: {
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         }
       });
 
@@ -36,14 +37,13 @@ const Admin = () => {
         setIsAuthenticated(true);
         setSessionExpired(false);
         
-        // Si la réponse contient les infos de session, les stocker
         if (data.user) {
-          // Optionnel: stocker les infos utilisateur pour l'affichage
           console.log('Session valide pour:', data.user.username);
         }
       } else {
         const errorData = await response.json();
         if (response.status === 401) {
+          localStorage.removeItem('admin_session');
           setSessionExpired(true);
           setIsAuthenticated(false);
           if (errorData.error?.includes('expirée')) {
@@ -68,16 +68,18 @@ const Admin = () => {
 
   const handleLogout = async () => {
     try {
+      const token = localStorage.getItem('admin_session');
       await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/admin-auth/logout`, {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         }
       });
     } catch (error) {
       console.error('Erreur logout:', error);
     } finally {
+      localStorage.removeItem('admin_session');
       setIsAuthenticated(false);
       setSessionExpired(false);
       setSessionExpirationTime(null);

@@ -2,10 +2,13 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+const getCorsHeaders = (origin: string) => ({
+  'Access-Control-Allow-Origin': origin,
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Credentials': 'true',
+  'Vary': 'Origin',
+});
 
 interface AdminLoginRequest {
   username: string;
@@ -29,9 +32,20 @@ async function verifyPassword(password: string, hash: string): Promise<boolean> 
   return hashedPassword === hash;
 }
 
+function extractToken(req: Request): string | null {
+  const cookie = req.headers.get('cookie') || '';
+  const fromCookie = cookie.split('admin_session=')[1]?.split(';')[0] || null;
+  const auth = req.headers.get('authorization') || req.headers.get('Authorization');
+  if (auth && auth.toLowerCase().startsWith('bearer ')) {
+    return auth.slice(7);
+  }
+  return fromCookie;
+}
+
 serve(async (req: Request) => {
+  const origin = req.headers.get('origin') || '*';
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers: getCorsHeaders(origin) });
   }
 
   const url = new URL(req.url);
@@ -45,7 +59,7 @@ serve(async (req: Request) => {
       if (!username || !password) {
         return new Response(
           JSON.stringify({ error: 'Nom d\'utilisateur et mot de passe requis' }),
-          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 400, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
         );
       }
 
@@ -60,7 +74,7 @@ serve(async (req: Request) => {
       if (error || !admin) {
         return new Response(
           JSON.stringify({ error: 'Identifiants invalides' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 401, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
         );
       }
 
@@ -68,7 +82,7 @@ serve(async (req: Request) => {
       if (!isValidPassword) {
         return new Response(
           JSON.stringify({ error: 'Identifiants invalides' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 401, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
         );
       }
 
@@ -91,7 +105,7 @@ serve(async (req: Request) => {
         console.error('Erreur création session:', sessionError);
         return new Response(
           JSON.stringify({ error: 'Erreur interne du serveur' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { status: 500, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
         );
       }
 
@@ -123,7 +137,7 @@ serve(async (req: Request) => {
         { 
           status: 200, 
           headers: { 
-            ...corsHeaders, 
+            ...getCorsHeaders(origin), 
             'Content-Type': 'application/json',
             'Set-Cookie': `admin_session=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=28800`
           } 
@@ -134,15 +148,14 @@ serve(async (req: Request) => {
       console.error('Erreur dans admin login:', error);
       return new Response(
         JSON.stringify({ error: 'Erreur interne du serveur' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
       );
     }
   }
 
   // Route: POST /admin-auth/logout
   if (req.method === 'POST' && path.includes('/logout')) {
-    const cookie = req.headers.get('cookie');
-    const sessionToken = cookie?.split('admin_session=')[1]?.split(';')[0];
+    const sessionToken = extractToken(req);
 
     // Révoquer la session en base si elle existe
     if (sessionToken) {
@@ -163,7 +176,7 @@ serve(async (req: Request) => {
       { 
         status: 200, 
         headers: { 
-          ...corsHeaders, 
+          ...getCorsHeaders(origin), 
           'Content-Type': 'application/json',
           'Set-Cookie': 'admin_session=; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=0'
         } 
@@ -173,13 +186,12 @@ serve(async (req: Request) => {
 
   // Route: GET /admin-auth/verify
   if (req.method === 'GET' && path.includes('/verify')) {
-    const cookie = req.headers.get('cookie');
-    const sessionToken = cookie?.split('admin_session=')[1]?.split(';')[0];
+    const sessionToken = extractToken(req);
 
     if (!sessionToken) {
       return new Response(
         JSON.stringify({ error: 'Session non trouvée' }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
       );
     }
 
@@ -193,7 +205,7 @@ serve(async (req: Request) => {
         console.error('Erreur vérification session:', error);
         return new Response(
           JSON.stringify({ error: 'Erreur interne du serveur' }),
-          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
         );
       }
 
@@ -201,7 +213,7 @@ serve(async (req: Request) => {
       if (!session || !session.is_valid) {
         return new Response(
           JSON.stringify({ error: 'Session invalide ou expirée' }),
-          { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 401, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
         );
       }
 
@@ -214,17 +226,17 @@ serve(async (req: Request) => {
             username: session.username
           }
         }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 200, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
       );
 
     } catch (error) {
       console.error('Erreur vérification session:', error);
       return new Response(
         JSON.stringify({ error: 'Erreur interne du serveur' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        { status: 500, headers: { ...getCorsHeaders(origin), 'Content-Type': 'application/json' } }
       );
     }
   }
 
-  return new Response('Not Found', { status: 404, headers: corsHeaders });
+  return new Response('Not Found', { status: 404, headers: getCorsHeaders(origin) });
 });

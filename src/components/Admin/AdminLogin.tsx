@@ -28,7 +28,6 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     try {
       const response = await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/admin-auth`, {
         method: 'POST',
-        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
@@ -43,6 +42,9 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
       }
 
       toast.success("Connexion réussie");
+      if (data?.token) {
+        localStorage.setItem('admin_session', data.token);
+      }
       onSuccess();
 
     } catch (error) {
