@@ -47,6 +47,24 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
+        success: {
+          DEFAULT: "hsl(var(--success))",
+          foreground: "hsl(var(--success-foreground))",
+        },
+        warning: {
+          DEFAULT: "hsl(var(--warning))",
+          foreground: "hsl(var(--warning-foreground))",
+        },
+        info: {
+          DEFAULT: "hsl(var(--info))",
+          foreground: "hsl(var(--info-foreground))",
+        },
+        "admin-sidebar": "hsl(var(--admin-sidebar))",
+        "admin-header": "hsl(var(--admin-header))",
+        "upload-zone": "hsl(var(--upload-zone))",
+        "upload-zone-border": "hsl(var(--upload-zone-border))",
+        "progress-bg": "hsl(var(--progress-bg))",
+        "progress-fill": "hsl(var(--progress-fill))",
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",
           foreground: "hsl(var(--sidebar-foreground))",
