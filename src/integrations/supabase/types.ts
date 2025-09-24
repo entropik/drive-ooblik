@@ -205,7 +205,6 @@ export type Database = {
       spaces: {
         Row: {
           created_at: string
-          email: string
           id: string
           is_authenticated: boolean | null
           magic_token: string | null
@@ -215,7 +214,6 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          email: string
           id?: string
           is_authenticated?: boolean | null
           magic_token?: string | null
@@ -225,7 +223,6 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          email?: string
           id?: string
           is_authenticated?: boolean | null
           magic_token?: string | null
@@ -234,6 +231,35 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      spaces_private: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          space_id: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          space_id: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          space_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spaces_private_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: true
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_sessions: {
         Row: {
