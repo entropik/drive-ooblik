@@ -70,9 +70,19 @@ export default function ConfigurationTab() {
     try {
       setLoading(true);
       
+      // Récupérer le token de session admin depuis le localStorage
+      const adminSession = localStorage.getItem('admin_session');
+      if (!adminSession) {
+        console.error('No admin session found');
+        return;
+      }
+
       // Récupérer la configuration S3
       const { data: s3Data } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'get_config', key: 's3_config' }
+        body: { action: 'get_config', key: 's3_config' },
+        headers: {
+          'x-admin-session': adminSession
+        }
       });
 
       if (s3Data?.success && s3Data.value) {
@@ -81,7 +91,10 @@ export default function ConfigurationTab() {
 
       // Récupérer la configuration de nommage  
       const { data: namingData } = await supabase.functions.invoke('admin-config', {
-        body: { action: 'get_config', key: 'naming_schema' }
+        body: { action: 'get_config', key: 'naming_schema' },
+        headers: {
+          'x-admin-session': adminSession
+        }
       });
 
       if (namingData?.success && namingData.value) {
@@ -123,12 +136,21 @@ export default function ConfigurationTab() {
     setIsSaving(true);
     
     try {
+      // Récupérer le token de session admin depuis le localStorage
+      const adminSession = localStorage.getItem('admin_session');
+      if (!adminSession) {
+        throw new Error('Session admin non trouvée');
+      }
+
       // Sauvegarder la config S3
       const { data: s3Response } = await supabase.functions.invoke('admin-config', {
         body: { 
           action: 'save_config', 
           key: 's3_config', 
           value: s3Config 
+        },
+        headers: {
+          'x-admin-session': adminSession
         }
       });
 
@@ -142,6 +164,9 @@ export default function ConfigurationTab() {
           action: 'save_config', 
           key: 'naming_schema', 
           value: namingConfig 
+        },
+        headers: {
+          'x-admin-session': adminSession
         }
       });
 
