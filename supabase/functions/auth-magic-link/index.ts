@@ -108,7 +108,7 @@ async function sendMagicLinkEmail(email: string, token: string, spaceName: strin
     const emailContent = {
       from: `${config.from.name} <${config.from.address}>`,
       to: email,
-      subject: `Accès à votre espace "${spaceName}" - Ooblik S3 Manager`,
+      subject: `Accès à votre espace "${spaceName}" - Drive ooblik`,
       html: `<!DOCTYPE html>
 <html>
 <head>
@@ -118,7 +118,7 @@ async function sendMagicLinkEmail(email: string, token: string, spaceName: strin
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; color: #374151;">
   
   <div style="text-align: center; margin-bottom: 40px;">
-    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #111827;">Ooblik S3 Manager</h1>
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #111827;">Drive ooblik</h1>
     <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">Accédez à votre espace de transfert sécurisé</p>
   </div>
   
@@ -154,7 +154,7 @@ async function sendMagicLinkEmail(email: string, token: string, spaceName: strin
   
   <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 32px;">
     <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
-      Ooblik S3 Manager - Plateforme sécurisée de transfert de fichiers
+      Drive ooblik - Plateforme sécurisée de transfert de fichiers
     </p>
   </div>
   

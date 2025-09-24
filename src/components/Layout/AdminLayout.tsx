@@ -37,7 +37,7 @@ export default function AdminLayout({ children, activeTab, onTabChange, onLogout
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-foreground">
-              Ooblik S3 Manager - Administration
+              Drive ooblik - Administration
             </h1>
             <p className="text-sm text-muted-foreground">
               Version 1.0.0 • Back-office sécurisé

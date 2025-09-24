@@ -66,7 +66,7 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
           </div>
           <CardTitle className="text-2xl font-bold">Administration</CardTitle>
           <CardDescription>
-            Accès sécurisé au back-office Ooblik S3 Manager
+            Accès sécurisé au back-office Drive ooblik
           </CardDescription>
         </CardHeader>
         

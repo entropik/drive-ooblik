@@ -158,7 +158,7 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
               <Upload className="h-8 w-8 text-primary" />
             </div>
           </div>
-          <CardTitle className="text-2xl font-bold">Ooblik S3 Manager</CardTitle>
+          <CardTitle className="text-2xl font-bold">Drive ooblik</CardTitle>
           <CardDescription>
             Accédez à votre espace de transfert sécurisé
           </CardDescription>
