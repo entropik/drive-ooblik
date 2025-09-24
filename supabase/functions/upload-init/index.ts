@@ -50,30 +50,48 @@ async function verifySession(sessionToken: string) {
   };
 }
 
-// Fonction pour construire la clé S3 selon le schéma configuré
-function buildS3Key(schema: string, options: any, space: any, filename: string): string {
+const buildS3Key = async (supabase: any, schema: string, options: any, space: any, filename: string): Promise<string> => {
   const now = new Date();
-  const basename = filename.substring(0, filename.lastIndexOf('.')) || filename;
-  const ext = filename.includes('.') ? filename.substring(filename.lastIndexOf('.') + 1) : '';
+  const uuid = crypto.randomUUID();
+  const random8 = Math.random().toString(36).substring(2, 10).toUpperCase();
   
-  let key = schema
-    .replace('{yyyy}', now.getFullYear().toString())
-    .replace('{mm}', (now.getMonth() + 1).toString().padStart(2, '0'))
-    .replace('{dd}', now.getDate().toString().padStart(2, '0'))
-    .replace('{HH}', now.getHours().toString().padStart(2, '0'))
-    .replace('{ii}', now.getMinutes().toString().padStart(2, '0'))
-    .replace('{ss}', now.getSeconds().toString().padStart(2, '0'))
-    .replace('{uuid}', crypto.randomUUID())
-    .replace('{random8}', Math.random().toString(36).substring(2, 10))
-    .replace('{email}', space.email || '[PROTECTED]')
-    .replace('{user}', (space.email || '[PROTECTED]').split('@')[0])
-    .replace('{space}', space.space_name)
-    .replace('{order_id}', '') // TODO: À implémenter avec WooCommerce
-    .replace('{filename}', filename)
-    .replace('{basename}', basename)
-    .replace('{ext}', ext);
+  // Extract file parts
+  const lastDotIndex = filename.lastIndexOf('.');
+  const basename = lastDotIndex > 0 ? filename.substring(0, lastDotIndex) : filename;
+  const ext = lastDotIndex > 0 ? filename.substring(lastDotIndex + 1) : '';
 
-  // Normalisation selon les options
+  // Récupérer l'email depuis spaces_private
+  let email = 'unknown';
+  if (space.id) {
+    const { data: privateData } = await supabase
+      .from('spaces_private')
+      .select('email')
+      .eq('space_id', space.id)
+      .single();
+    
+    if (privateData?.email) {
+      email = privateData.email;
+    }
+  }
+
+  let key = schema
+    .replace(/{yyyy}/g, now.getFullYear().toString())
+    .replace(/{mm}/g, (now.getMonth() + 1).toString().padStart(2, '0'))
+    .replace(/{dd}/g, now.getDate().toString().padStart(2, '0'))
+    .replace(/{HH}/g, now.getHours().toString().padStart(2, '0'))
+    .replace(/{ii}/g, now.getMinutes().toString().padStart(2, '0'))
+    .replace(/{ss}/g, now.getSeconds().toString().padStart(2, '0'))
+    .replace(/{uuid}/g, uuid)
+    .replace(/{random8}/g, random8)
+    .replace(/{email}/g, email)
+    .replace(/{user}/g, email.replace('@', '-').replace(/\./g, '-').toLowerCase())
+    .replace(/{space}/g, (space.space_name || 'unknown').toLowerCase().replace(/\s+/g, '-'))
+    .replace(/{order_id}/g, space.order_id || 'no-order')
+    .replace(/{filename}/g, filename)
+    .replace(/{basename}/g, basename)
+    .replace(/{ext}/g, ext);
+
+  // Apply options
   if (options.lowercase) {
     key = key.toLowerCase();
   }
@@ -86,17 +104,13 @@ function buildS3Key(schema: string, options: any, space: any, filename: string):
     key = key.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   }
   
-  // Nettoyage des caractères spéciaux
-  key = key.replace(/[^a-zA-Z0-9.\-_/]/g, '');
-  
-  // Troncature si nécessaire
   if (options.maxLength && key.length > options.maxLength) {
     const extension = ext ? `.${ext}` : '';
     key = key.substring(0, options.maxLength - extension.length) + extension;
   }
-  
+
   return key;
-}
+};
 
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
@@ -149,44 +163,62 @@ serve(async (req: Request) => {
       );
     }
 
-    // Récupération des configurations
-    const { data: configs } = await supabase
+    // Récupérer la configuration S3 et naming schema depuis la table config
+    const { data: configData, error: configError } = await supabase
       .from('config')
       .select('key, value')
-      .in('key', ['upload_config', 'naming_schema']);
+      .in('key', ['s3_config', 'naming_schema']);
 
-    const uploadConfig = configs?.find(c => c.key === 'upload_config')?.value as any;
-    const namingConfig = configs?.find(c => c.key === 'naming_schema')?.value as any;
-
-    if (!uploadConfig || !namingConfig) {
-      return new Response(
-        JSON.stringify({ error: 'Configuration manquante' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    if (configError) {
+      console.error('Config fetch error:', configError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch configuration' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Validation des règles d'upload
-    const maxSizeBytes = uploadConfig.maxSizeMB * 1024 * 1024;
-    if (file_size > maxSizeBytes) {
-      return new Response(
-        JSON.stringify({ error: `Fichier trop volumineux (max: ${uploadConfig.maxSizeMB}MB)` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    // Parse config data
+    const s3Config = configData?.find(c => c.key === 's3_config')?.value || {
+      allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'zip'],
+      maxFileSize: 500 * 1024 * 1024 // 500MB
+    };
+    const namingSchema = configData?.find(c => c.key === 'naming_schema')?.value || { 
+      schema: '{yyyy}/{mm}/{space}/{basename}-{uuid}.{ext}',
+      prefix: '',
+      lowercase: true,
+      replaceSpacesWithDash: true,
+      stripAccents: true,
+      maxLength: 255
+    };
+
+    // Validation des paramètres avec config S3
+    const maxFileSize = s3Config.maxFileSize || (500 * 1024 * 1024); // 500MB par défaut
+    if (file_size > maxFileSize) {
+      return new Response(JSON.stringify({ error: 'File too large' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
     const fileExtension = filename.split('.').pop()?.toLowerCase();
-    if (fileExtension && !uploadConfig.allowedExtensions.includes(fileExtension)) {
-      return new Response(
-        JSON.stringify({ error: `Extension non autorisée. Extensions acceptées: ${uploadConfig.allowedExtensions.join(', ')}` }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    const allowedExtensions = s3Config.allowedExtensions || ['jpg', 'jpeg', 'png', 'pdf', 'doc', 'docx', 'zip'];
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      return new Response(JSON.stringify({ error: 'File type not allowed' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
     }
 
-    // Génération de la clé S3 (using session data without email)
-    const s3Key = buildS3Key(namingConfig.schema, namingConfig.options, { 
-      space_name: spaceInfo.space_name,
-      email: '[PROTECTED]' // Never expose email in S3 keys
-    }, filename);
+    // Générer la clé S3 avec le préfixe
+    const baseKey = await buildS3Key(
+      supabase,
+      namingSchema.schema, 
+      namingSchema, 
+      { id: sessionData.space_id, space_name: spaceInfo.space_name }, 
+      filename
+    );
+    
+    const s3Key = namingSchema.prefix ? `${namingSchema.prefix}${baseKey}` : baseKey;
     
     // Génération de l'ID d'upload multipart
     const uploadId = crypto.randomUUID();
@@ -216,7 +248,7 @@ serve(async (req: Request) => {
 
     // Log de l'événement (using secure session data)
     await supabase.from('logs').insert({
-      event_type: 'auth', // Using valid event_type
+      event_type: 'upload_init',
       space_id: sessionData.space_id,
       file_id: fileRecord.id,
       details: { filename, file_size, mime_type, s3_key: s3Key },

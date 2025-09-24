@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,43 +27,69 @@ interface FileItem {
   customerEmail: string;
   orderId: string;
   status: "completed" | "processing" | "failed";
+  s3_key?: string;
+  space_name?: string;
 }
 
-const mockFiles: FileItem[] = [
-  {
-    id: "1",
-    name: "brochure-marketing.pdf",
-    type: "application/pdf",
-    size: 2456789,
-    uploadedAt: "2024-01-15T10:30:00Z",
-    customerEmail: "client@exemple.com",
-    orderId: "#12345",
-    status: "completed",
-  },
-  {
-    id: "2", 
-    name: "design-logo-v2.jpg",
-    type: "image/jpeg",
-    size: 1234567,
-    uploadedAt: "2024-01-14T16:20:00Z",
-    customerEmail: "designer@studio.fr",
-    orderId: "#12346",
-    status: "completed",
-  },
-  {
-    id: "3",
-    name: "presentation-client.pdf",
-    type: "application/pdf", 
-    size: 5678901,
-    uploadedAt: "2024-01-13T09:15:00Z",
-    customerEmail: "commercial@entreprise.com",
-    orderId: "#12347",
-    status: "processing",
-  },
-];
-
 export default function FilesTab() {
-  const [files] = useState<FileItem[]>(mockFiles);
+  const [files, setFiles] = useState<FileItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchFiles();
+  }, []);
+
+  const fetchFiles = async () => {
+    try {
+      setLoading(true);
+      
+      // Récupérer les fichiers avec les informations des espaces et email privé
+      const { data: filesData, error: filesError } = await supabase
+        .from('files')
+        .select(`
+          id,
+          original_name,
+          mime_type,
+          file_size,
+          created_at,
+          upload_status,
+          s3_key,
+          spaces (
+            id,
+            space_name,
+            spaces_private (
+              email
+            )
+          )
+        `)
+        .order('created_at', { ascending: false });
+
+      if (filesError) {
+        console.error('Erreur récupération fichiers:', filesError);
+        return;
+      }
+
+      const formattedFiles: FileItem[] = (filesData || []).map(file => ({
+        id: file.id,
+        name: file.original_name,
+        type: file.mime_type || 'unknown',
+        size: file.file_size,
+        uploadedAt: file.created_at,
+        customerEmail: file.spaces?.spaces_private?.[0]?.email || 'N/A',
+        orderId: `#${file.id.slice(0, 8)}`,
+        status: file.upload_status === 'completed' ? 'completed' : 
+                file.upload_status === 'pending' ? 'processing' : 'failed',
+        s3_key: file.s3_key,
+        space_name: file.spaces?.space_name || 'N/A'
+      }));
+
+      setFiles(formattedFiles);
+    } catch (error) {
+      console.error('Erreur lors du chargement des fichiers:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
 
@@ -113,6 +140,21 @@ export default function FilesTab() {
   });
 
   const totalSize = files.reduce((acc, file) => acc + file.size, 0);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-start">
+          <div>
+            <h2 className="text-2xl font-bold">Gestion des fichiers</h2>
+            <p className="text-muted-foreground">
+              Chargement des fichiers...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
