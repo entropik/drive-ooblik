@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, XCircle, Loader2, Mail, Server, AlertCircle } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, Mail, Server, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
@@ -48,6 +48,7 @@ export default function SMTPConfigTab() {
   const [isTesting, setIsTesting] = useState(false);
   const [testStatus, setTestStatus] = useState<"success" | "error" | null>(null);
   const [testEmail, setTestEmail] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -306,13 +307,29 @@ export default function SMTPConfigTab() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Mot de passe d'application</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={config.auth.pass}
-                  onChange={(e) => updateAuth({ pass: e.target.value })}
-                  placeholder="••••••••••••••••"
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={config.auth.pass}
+                    onChange={(e) => updateAuth({ pass: e.target.value })}
+                    placeholder="••••••••••••••••"
+                    className="pr-10"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    onClick={() => setShowPassword(!showPassword)}
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
               </div>
               
               <Separator />
