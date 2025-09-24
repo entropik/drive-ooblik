@@ -95,7 +95,7 @@ serve(async (req: Request) => {
     const nodemailer = await import('npm:nodemailer@6.9.7');
     
     // Créer le transporteur SMTP
-    const transporter = nodemailer.default.createTransporter({
+    const transporter = nodemailer.createTransporter({
       host: config.host,
       port: config.port,
       secure: config.secure, // true pour 465, false pour autres ports
