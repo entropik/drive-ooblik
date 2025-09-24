@@ -84,11 +84,11 @@ serve(async (req: Request) => {
         user_agent: userAgent
       });
 
-    // Log de l'événement
+    // Log de l'événement (sans email dans le log pour sécurité)
     await supabase.from('logs').insert({
       event_type: 'auth',
       space_id: space.id,
-      details: { action: 'magic_link_consumed', email: space.email, session_created: !sessionError },
+      details: { action: 'magic_link_consumed', space_name: space.space_name, session_created: !sessionError },
       ip_address: clientIP,
       user_agent: userAgent
     });

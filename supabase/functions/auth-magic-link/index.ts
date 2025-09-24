@@ -208,21 +208,20 @@ serve(async (req: Request) => {
     const hashedToken = await hashToken(magicToken); // Hash token for secure storage
     const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000); // 6h for better security
 
-    // Création ou mise à jour de l'espace
+    // Création ou mise à jour de l'espace (sans email dans spaces)
     const { data: existingSpace } = await supabase
       .from('spaces')
       .select('id')
-      .eq('email', email)
       .eq('space_name', space_name)
       .single();
 
     let spaceId;
     if (existingSpace) {
-      // Mise à jour du token existant (store hashed version)
+      // Espace existant - mise à jour du token
       const { data } = await supabase
         .from('spaces')
         .update({
-          magic_token: hashedToken, // Store hashed token for security
+          magic_token: hashedToken,
           token_expires_at: expiresAt.toISOString(),
           is_authenticated: false
         })
@@ -230,20 +229,31 @@ serve(async (req: Request) => {
         .select('id')
         .single();
       spaceId = data?.id;
+
+      // Mettre à jour l'email dans la table privée si nécessaire
+      await supabase
+        .from('spaces_private')
+        .upsert({ space_id: existingSpace.id, email }, { onConflict: 'space_id' });
     } else {
-      // Création d'un nouvel espace (store hashed version)
+      // Création d'un nouvel espace (sans email dans spaces)
       const { data } = await supabase
         .from('spaces')
         .insert({
-          email,
           space_name,
-          magic_token: hashedToken, // Store hashed token for security
+          magic_token: hashedToken,
           token_expires_at: expiresAt.toISOString(),
           is_authenticated: false
         })
         .select('id')
         .single();
       spaceId = data?.id;
+
+      // Stocker l'email dans la table privée sécurisée
+      if (spaceId) {
+        await supabase
+          .from('spaces_private')
+          .insert({ space_id: spaceId, email });
+      }
     }
 
     // Log de l'événement
