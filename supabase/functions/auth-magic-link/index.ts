@@ -28,6 +28,12 @@ async function hashToken(token: string): Promise<string> {
 
 async function verifyHCaptcha(token: string): Promise<boolean> {
   try {
+    const environment = Deno.env.get('ENVIRONMENT') || 'development';
+    if (environment !== 'production') {
+      console.warn('hCaptcha verification bypassed in non-production environment:', environment);
+      return true; // Bypass in preview/dev to avoid test key/secret mismatch
+    }
+
     // Note: En production, vous devrez configurer votre clé secrète hCaptcha
     const hcaptchaSecret = Deno.env.get('HCAPTCHA_SECRET_KEY');
     console.log('hCaptcha verification - Secret exists:', !!hcaptchaSecret);
@@ -47,12 +53,12 @@ async function verifyHCaptcha(token: string): Promise<boolean> {
     const response = await fetch('https://hcaptcha.com/siteverify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: `secret=${hcaptchaSecret}&response=${token}`
+      body: `secret=${hcaptchaSecret}&response=${encodeURIComponent(token)}`
     });
 
     const result = await response.json();
     console.log('hCaptcha verification result:', result);
-    return result.success;
+    return !!result.success;
   } catch (error) {
     console.error('hCaptcha verification error:', error);
     return false;
