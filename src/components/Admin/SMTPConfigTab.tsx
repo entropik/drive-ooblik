@@ -57,16 +57,27 @@ export default function SMTPConfigTab() {
 
   const loadSMTPConfig = async () => {
     try {
-      const { data, error } = await supabase
-        .from('config')
-        .select('value')
-        .eq('key', 'smtp_config')
-        .maybeSingle();
+      const token = localStorage.getItem('admin_session');
+      const response = await fetch('https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/admin-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          action: 'get_config',
+          key: 'smtp_config'
+        })
+      });
 
-      if (error) throw error;
-
-      if (data?.value) {
-        setConfig(data.value as unknown as SMTPConfig);
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data) {
+          setConfig(result.data as SMTPConfig);
+        }
+      } else {
+        throw new Error('Failed to load SMTP config');
       }
     } catch (error) {
       console.error('Erreur chargement config SMTP:', error);
@@ -92,24 +103,35 @@ export default function SMTPConfigTab() {
 
     setIsSaving(true);
     try {
-      const { error } = await supabase
-        .from('config')
-        .upsert({
+      const token = localStorage.getItem('admin_session');
+      const response = await fetch('https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/admin-config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          action: 'save_config',
           key: 'smtp_config',
-          value: config as any
-        });
-
-      if (error) throw error;
-
-      toast({
-        title: "Configuration sauvegardée",
-        description: "Les paramètres SMTP ont été mis à jour avec succès"
+          value: config
+        })
       });
+
+      if (response.ok) {
+        toast({
+          title: "Configuration sauvegardée",
+          description: "Les paramètres SMTP ont été mis à jour avec succès"
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.error || 'Erreur de sauvegarde');
+      }
     } catch (error) {
       console.error('Erreur sauvegarde SMTP:', error);
       toast({
         title: "Erreur",
-        description: "Impossible de sauvegarder la configuration",
+        description: error instanceof Error ? error.message : "Impossible de sauvegarder la configuration",
         variant: "destructive"
       });
     } finally {
