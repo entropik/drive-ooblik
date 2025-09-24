@@ -94,7 +94,7 @@ serve(async (req: Request) => {
           key: key,
           value: value,
           updated_at: new Date().toISOString()
-        });
+        }, { onConflict: 'key' });
 
       if (configError) {
         console.error('[admin-config] Config save error:', configError);
