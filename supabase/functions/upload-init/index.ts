@@ -16,16 +16,38 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-// Verify session token using the new secure function
+// Direct session validation without risky RPC/view dependencies
 async function verifySession(sessionToken: string) {
   const { data: sessionData, error } = await supabase
-    .rpc('validate_session_secure', { p_session_token: sessionToken });
+    .from('user_sessions')
+    .select('space_id, expires_at, is_active')
+    .eq('session_token', sessionToken)
+    .eq('is_active', true)
+    .gt('expires_at', new Date().toISOString())
+    .single();
 
-  if (error || !sessionData || sessionData.length === 0) {
+  if (error || !sessionData) {
     return null;
   }
 
-  return sessionData[0]; // Return first result
+  // Update last accessed and get minimal space info from admin query
+  await supabase
+    .from('user_sessions')
+    .update({ last_accessed_at: new Date().toISOString() })
+    .eq('session_token', sessionToken);
+
+  // Admin-level query to get space name without email exposure
+  const { data: spaceData } = await supabase
+    .from('spaces')
+    .select('space_name, is_authenticated')
+    .eq('id', sessionData.space_id)
+    .single();
+
+  return {
+    space_id: sessionData.space_id,
+    space_name: spaceData?.space_name || 'unknown',
+    is_authenticated: spaceData?.is_authenticated || false
+  };
 }
 
 // Fonction pour construire la clé S3 selon le schéma configuré
