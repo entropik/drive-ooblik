@@ -235,6 +235,50 @@ export type Database = {
         }
         Relationships: []
       }
+      user_sessions: {
+        Row: {
+          created_at: string
+          expires_at: string
+          id: string
+          ip_address: unknown | null
+          is_active: boolean
+          last_accessed_at: string
+          session_token: string
+          space_id: string
+          user_agent: string | null
+        }
+        Insert: {
+          created_at?: string
+          expires_at: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_accessed_at?: string
+          session_token: string
+          space_id: string
+          user_agent?: string | null
+        }
+        Update: {
+          created_at?: string
+          expires_at?: string
+          id?: string
+          ip_address?: unknown | null
+          is_active?: boolean
+          last_accessed_at?: string
+          session_token?: string
+          space_id?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_sessions_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -243,6 +287,15 @@ export type Database = {
       cleanup_expired_admin_sessions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      get_space_info_secure: {
+        Args: { p_session_token: string }
+        Returns: {
+          created_at: string
+          is_authenticated: boolean
+          space_id: string
+          space_name: string
+        }[]
       }
       revoke_admin_session: {
         Args: { session_token: string }
