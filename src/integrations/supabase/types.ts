@@ -152,6 +152,13 @@ export type Database = {
             referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "files_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_secure"
+            referencedColumns: ["id"]
+          },
         ]
       }
       logs: {
@@ -198,6 +205,13 @@ export type Database = {
             columns: ["space_id"]
             isOneToOne: false
             referencedRelation: "spaces"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "logs_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_secure"
             referencedColumns: ["id"]
           },
         ]
@@ -277,29 +291,60 @@ export type Database = {
             referencedRelation: "spaces"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "user_sessions_space_id_fkey"
+            columns: ["space_id"]
+            isOneToOne: false
+            referencedRelation: "spaces_secure"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      spaces_secure: {
+        Row: {
+          created_at: string | null
+          id: string | null
+          is_authenticated: boolean | null
+          space_name: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string | null
+          is_authenticated?: boolean | null
+          space_name?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string | null
+          is_authenticated?: boolean | null
+          space_name?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       cleanup_expired_admin_sessions: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
-      get_space_info_secure: {
-        Args: { p_session_token: string }
-        Returns: {
-          created_at: string
-          is_authenticated: boolean
-          space_id: string
-          space_name: string
-        }[]
-      }
       revoke_admin_session: {
         Args: { session_token: string }
         Returns: undefined
+      }
+      validate_session_secure: {
+        Args: { p_session_token: string }
+        Returns: {
+          is_authenticated: boolean
+          session_active: boolean
+          session_expires_at: string
+          space_id: string
+          space_name: string
+        }[]
       }
       verify_admin_session: {
         Args: { p_session_token: string }
