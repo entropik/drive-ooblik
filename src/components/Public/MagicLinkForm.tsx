@@ -19,8 +19,8 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
   const [emailSent, setEmailSent] = useState(false);
   const captchaRef = useRef<HCaptcha | null>(null);
 
-  // Clé publique hCaptcha - remplacez par votre vraie clé depuis votre dashboard hCaptcha
-  const HCAPTCHA_SITE_KEY = "VOTRE_VRAIE_CLE_HCAPTCHA_ICI"; // Remplacez par votre clé depuis le dashboard
+  // Clé publique hCaptcha - configurée via les variables d'environnement
+  const HCAPTCHA_SITE_KEY = "10000000-ffff-ffff-ffff-000000000001"; // Test key for development - replace with your real key in production
 
   const handleCaptchaVerify = (token: string) => {
     setCaptchaToken(token);

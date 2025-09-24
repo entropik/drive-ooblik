@@ -110,7 +110,7 @@ async function sendMagicLinkEmail(email: string, token: string, spaceName: strin
     <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; margin: 25px 0;">
       <h3 style="margin-top: 0; color: #28a745; font-size: 14px;">ℹ️ Informations importantes :</h3>
       <ul style="color: #666; line-height: 1.6; font-size: 14px; margin: 10px 0; padding-left: 20px;">
-        <li>Ce lien est valide pendant <strong>24 heures</strong></li>
+        <li>Ce lien est valide pendant <strong>6 heures</strong></li>
         <li>Il ne peut être utilisé qu'une seule fois</li>
         <li>Gardez ce lien confidentiel</li>
         <li>Aucune installation requise, tout fonctionne dans votre navigateur</li>
@@ -195,7 +195,7 @@ serve(async (req: Request) => {
 
     // Génération du token magic
     const magicToken = crypto.randomUUID();
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000); // 6h for better security
 
     // Création ou mise à jour de l'espace
     const { data: existingSpace } = await supabase
@@ -251,14 +251,21 @@ serve(async (req: Request) => {
       console.warn('Erreur envoi email, mais magic link généré');
     }
 
+    // Prepare response - only expose token in development
+    const isDevelopment = Deno.env.get('ENVIRONMENT') !== 'production';
+    const responseData: any = { 
+      success: true, 
+      message: emailSent ? 'Lien d\'accès envoyé par email' : 'Lien d\'accès généré (email non envoyé)'
+    };
+
+    // Only expose sensitive data in development
+    if (isDevelopment) {
+      responseData.magic_token = magicToken;
+      responseData.magic_link = `${Deno.env.get('SUPABASE_URL')}/functions/v1/auth-consume?token=${magicToken}`;
+    }
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        message: emailSent ? 'Lien d\'accès envoyé par email' : 'Lien d\'accès généré (email non envoyé)',
-        // En dev, on retourne le token pour faciliter les tests
-        magic_token: magicToken,
-        magic_link: `${Deno.env.get('SUPABASE_URL')}/functions/v1/auth-consume?token=${magicToken}`
-      }),
+      JSON.stringify(responseData),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
 

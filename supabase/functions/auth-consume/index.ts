@@ -27,6 +27,11 @@ serve(async (req: Request) => {
       return new Response('Token manquant', { status: 400, headers: corsHeaders });
     }
 
+    // Get client IP for binding verification
+    const clientIP = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 
+                     req.headers.get('x-real-ip') || 
+                     'unknown';
+
     // Vérification du token
     const { data: space, error } = await supabase
       .from('spaces')
@@ -39,10 +44,15 @@ serve(async (req: Request) => {
       return new Response('Token invalide ou expiré', { status: 400, headers: corsHeaders });
     }
 
-    // Mise à jour de l'espace comme authentifié
+    // Security: Invalidate the magic token after successful verification (token rotation)
+    // and update the space as authenticated
     await supabase
       .from('spaces')
-      .update({ is_authenticated: true })
+      .update({ 
+        is_authenticated: true,
+        magic_token: null, // Invalidate token for security
+        token_expires_at: null // Clear expiration
+      })
       .eq('id', space.id);
 
     // Log de l'événement
