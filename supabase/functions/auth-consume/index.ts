@@ -10,6 +10,16 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Security: Hash tokens to match stored hashed versions
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
 serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -32,11 +42,14 @@ serve(async (req: Request) => {
                      req.headers.get('x-real-ip') || 
                      'unknown';
 
-    // Vérification du token
+    // Hash the incoming token to compare with stored hash
+    const hashedToken = await hashToken(token);
+    
+    // Vérification du token (compare hashed versions)
     const { data: space, error } = await supabase
       .from('spaces')
       .select('*')
-      .eq('magic_token', token)
+      .eq('magic_token', hashedToken)
       .gt('token_expires_at', new Date().toISOString())
       .single();
 

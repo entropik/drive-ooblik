@@ -16,6 +16,16 @@ const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+// Security: Hash magic tokens before storing in database
+async function hashToken(token: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(token);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex;
+}
+
 async function verifyHCaptcha(token: string): Promise<boolean> {
   try {
     // Note: En production, vous devrez configurer votre clé secrète hCaptcha
@@ -195,6 +205,7 @@ serve(async (req: Request) => {
 
     // Génération du token magic
     const magicToken = crypto.randomUUID();
+    const hashedToken = await hashToken(magicToken); // Hash token for secure storage
     const expiresAt = new Date(Date.now() + 6 * 60 * 60 * 1000); // 6h for better security
 
     // Création ou mise à jour de l'espace
@@ -207,11 +218,11 @@ serve(async (req: Request) => {
 
     let spaceId;
     if (existingSpace) {
-      // Mise à jour du token existant
+      // Mise à jour du token existant (store hashed version)
       const { data } = await supabase
         .from('spaces')
         .update({
-          magic_token: magicToken,
+          magic_token: hashedToken, // Store hashed token for security
           token_expires_at: expiresAt.toISOString(),
           is_authenticated: false
         })
@@ -220,13 +231,13 @@ serve(async (req: Request) => {
         .single();
       spaceId = data?.id;
     } else {
-      // Création d'un nouvel espace
+      // Création d'un nouvel espace (store hashed version)
       const { data } = await supabase
         .from('spaces')
         .insert({
           email,
           space_name,
-          magic_token: magicToken,
+          magic_token: hashedToken, // Store hashed token for security
           token_expires_at: expiresAt.toISOString(),
           is_authenticated: false
         })
