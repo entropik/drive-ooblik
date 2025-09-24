@@ -1,10 +1,9 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-admin-session',
 };
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
@@ -27,11 +26,17 @@ function extractToken(req: Request): string | null {
   if (authHeader && authHeader.startsWith('Bearer ')) {
     return authHeader.substring(7);
   }
+
+  // Support custom header to avoid JWT gateway issues
+  const customHeader = req.headers.get('x-admin-session');
+  if (customHeader) return customHeader;
   
   return null;
 }
 
 serve(async (req: Request) => {
+  console.log(`[test-smtp] ${req.method} request received`);
+
   // Gestion CORS
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -50,6 +55,7 @@ serve(async (req: Request) => {
     // Vérification du token de session admin
     const sessionToken = extractToken(req);
     if (!sessionToken) {
+      console.log('[test-smtp] No session token found');
       return new Response(JSON.stringify({ error: 'Token de session manquant' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -57,15 +63,19 @@ serve(async (req: Request) => {
     }
 
     // Vérification de la session admin
+    console.log('[test-smtp] Verifying admin session');
     const { data: sessionData, error: sessionError } = await supabase
       .rpc('verify_admin_session', { p_session_token: sessionToken });
 
     if (sessionError || !sessionData || sessionData.length === 0 || !sessionData[0].is_valid) {
+      console.log('[test-smtp] Invalid session');
       return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
       });
     }
+
+    console.log('[test-smtp] Session validated for user:', sessionData[0].username);
 
     if (!email || !config) {
       return new Response(JSON.stringify({ error: 'Email et configuration requis' }), {
@@ -81,27 +91,35 @@ serve(async (req: Request) => {
       user: config.auth.user
     });
 
-    // Créer le client SMTP
-    const client = new SMTPClient({
-      connection: {
-        hostname: config.host,
-        port: config.port,
-        tls: config.secure,
-        auth: {
-          username: config.auth.user,
-          password: config.auth.pass,
-        },
+    // Utiliser nodemailer via npm pour tester la configuration SMTP
+    const nodemailer = await import('npm:nodemailer@6.9.7');
+    
+    // Créer le transporteur SMTP
+    const transporter = nodemailer.default.createTransporter({
+      host: config.host,
+      port: config.port,
+      secure: config.secure, // true pour 465, false pour autres ports
+      auth: {
+        user: config.auth.user,
+        pass: config.auth.pass,
       },
+      // Désactiver la vérification SSL pour éviter les erreurs de certificat
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
-    // Se connecter et envoyer l'email de test
-    await client.connect();
+    // Vérifier la connexion
+    console.log('[test-smtp] Testing SMTP connection...');
+    await transporter.verify();
+    console.log('[test-smtp] SMTP connection verified successfully');
 
-    await client.send({
-      from: config.from.address,
+    // Envoyer l'email de test
+    const emailContent = {
+      from: `${config.from.name} <${config.from.address}>`,
       to: email,
       subject: "Test de configuration SMTP - Plateforme Upload",
-      content: `<!DOCTYPE html>
+      html: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -133,33 +151,37 @@ serve(async (req: Request) => {
     </p>
   </div>
 </body>
-</html>`,
-      html: true,
-    });
+</html>`
+    };
 
-    await client.close();
-
-    console.log('Email de test envoyé avec succès à:', email);
+    console.log('[test-smtp] Sending test email...');
+    const info = await transporter.sendMail(emailContent);
+    console.log('[test-smtp] Email sent successfully:', info.messageId);
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: 'Email de test envoyé avec succès' 
+      message: 'Email de test envoyé avec succès',
+      messageId: info.messageId
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' }
     });
 
   } catch (error) {
-    console.error('Erreur test SMTP:', error);
+    console.error('[test-smtp] Error:', error);
     
     let errorMessage = 'Erreur inconnue lors du test SMTP';
     
-    if (error.message.includes('authentication')) {
-      errorMessage = 'Erreur d\'authentification - Vérifiez vos identifiants';
-    } else if (error.message.includes('connection')) {
+    if (error.message.includes('authentication') || error.message.includes('Invalid login')) {
+      errorMessage = 'Erreur d\'authentification - Vérifiez vos identifiants (nom d\'utilisateur et mot de passe)';
+    } else if (error.message.includes('connection') || error.message.includes('ECONNREFUSED')) {
       errorMessage = 'Erreur de connexion - Vérifiez l\'adresse du serveur et le port';
-    } else if (error.message.includes('timeout')) {
+    } else if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
       errorMessage = 'Timeout de connexion - Le serveur ne répond pas';
+    } else if (error.message.includes('certificate') || error.message.includes('TLS')) {
+      errorMessage = 'Erreur de certificat SSL/TLS - Vérifiez la configuration de sécurité';
+    } else if (error.message.includes('ENOTFOUND')) {
+      errorMessage = 'Serveur SMTP introuvable - Vérifiez l\'adresse du serveur';
     } else if (error.message) {
       errorMessage = error.message;
     }
