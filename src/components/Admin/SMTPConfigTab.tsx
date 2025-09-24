@@ -206,9 +206,9 @@ export default function SMTPConfigTab() {
         </AlertDescription>
       </Alert>
 
-      <div className="grid gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configuration du serveur */}
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Server className="h-5 w-5" />
@@ -219,7 +219,7 @@ export default function SMTPConfigTab() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="provider">Fournisseur</Label>
                 <Select value={config.provider} onValueChange={(value) => {
@@ -258,9 +258,6 @@ export default function SMTPConfigTab() {
                   placeholder="smtp.fastmail.com"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="port">Port</Label>
                 <Select value={config.port.toString()} onValueChange={(value) => updateConfig({ port: parseInt(value) })}>
@@ -274,7 +271,7 @@ export default function SMTPConfigTab() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-center justify-between pt-7">
+              <div className="flex items-center justify-between pt-2">
                 <div className="space-y-0.5">
                   <Label>Connexion sécurisée (SSL/TLS)</Label>
                 </div>
@@ -287,8 +284,8 @@ export default function SMTPConfigTab() {
           </CardContent>
         </Card>
 
-        {/* Authentification */}
-        <Card>
+        {/* Authentification et expéditeur */}
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Authentification</CardTitle>
             <CardDescription>
@@ -296,7 +293,7 @@ export default function SMTPConfigTab() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="username">Nom d'utilisateur / Email</Label>
                 <Input
@@ -317,20 +314,9 @@ export default function SMTPConfigTab() {
                   placeholder="••••••••••••••••"
                 />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Configuration expéditeur */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Expéditeur par défaut</CardTitle>
-            <CardDescription>
-              Informations qui apparaîtront comme expéditeur des emails
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+              
+              <Separator />
+              
               <div className="space-y-2">
                 <Label htmlFor="fromName">Nom de l'expéditeur</Label>
                 <Input
@@ -341,7 +327,7 @@ export default function SMTPConfigTab() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="fromAddress">Adresse email</Label>
+                <Label htmlFor="fromAddress">Adresse email expéditeur</Label>
                 <Input
                   id="fromAddress"
                   type="email"
@@ -354,32 +340,35 @@ export default function SMTPConfigTab() {
           </CardContent>
         </Card>
 
-        {/* Test de configuration */}
-        <Card>
+        {/* Test et sauvegarde */}
+        <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Mail className="h-5 w-5" />
-                Test de configuration
-              </div>
-              {testStatus === "success" && (
-                <Badge variant="default" className="bg-green-500">
-                  <CheckCircle className="h-3 w-3 mr-1" />
-                  Test réussi
-                </Badge>
-              )}
-              {testStatus === "error" && (
-                <Badge variant="destructive">
-                  <XCircle className="h-3 w-3 mr-1" />
-                  Test échoué
-                </Badge>
-              )}
+            <CardTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Test et sauvegarde
             </CardTitle>
             <CardDescription>
-              Envoyez un email de test pour vérifier la configuration
+              Testez votre configuration avant de la sauvegarder
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {testStatus && (
+              <div className="mb-4">
+                {testStatus === "success" && (
+                  <Badge variant="default" className="bg-green-500 text-white">
+                    <CheckCircle className="h-3 w-3 mr-1" />
+                    Test réussi
+                  </Badge>
+                )}
+                {testStatus === "error" && (
+                  <Badge variant="destructive">
+                    <XCircle className="h-3 w-3 mr-1" />
+                    Test échoué
+                  </Badge>
+                )}
+              </div>
+            )}
+            
             <div className="space-y-2">
               <Label htmlFor="testEmail">Email de test</Label>
               <Input
@@ -409,24 +398,25 @@ export default function SMTPConfigTab() {
                 </>
               )}
             </Button>
+            
+            <Separator />
+
+            <Button 
+              onClick={saveSMTPConfig} 
+              disabled={isSaving}
+              className="w-full"
+            >
+              {isSaving ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sauvegarde...
+                </>
+              ) : (
+                "Sauvegarder la configuration SMTP"
+              )}
+            </Button>
           </CardContent>
         </Card>
-
-        {/* Bouton de sauvegarde */}
-        <Button 
-          onClick={saveSMTPConfig} 
-          disabled={isSaving}
-          className="w-full"
-        >
-          {isSaving ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Sauvegarde...
-            </>
-          ) : (
-            "Sauvegarder la configuration SMTP"
-          )}
-        </Button>
       </div>
     </div>
   );

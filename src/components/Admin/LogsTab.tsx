@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -188,68 +189,67 @@ export default function LogsTab() {
       </div>
 
       {/* Statistiques des logs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-8 w-8 text-success" />
-              <div>
-                <p className="text-2xl font-bold">{logs.filter(l => l.level === 'success').length}</p>
-                <p className="text-sm text-muted-foreground">Succès</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Statistiques des événements</CardTitle>
+            <CardDescription>Répartition par niveau de log</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-8 w-8 text-green-500" />
+                <div>
+                  <p className="text-2xl font-bold">{logs.filter(l => l.level === 'success').length}</p>
+                  <p className="text-sm text-muted-foreground">Succès</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <XCircle className="h-8 w-8 text-destructive" />
+                <div>
+                  <p className="text-2xl font-bold">{logs.filter(l => l.level === 'error').length}</p>
+                  <p className="text-sm text-muted-foreground">Erreurs</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-8 w-8 text-orange-500" />
+                <div>
+                  <p className="text-2xl font-bold">{logs.filter(l => l.level === 'warning').length}</p>
+                  <p className="text-sm text-muted-foreground">Avertissements</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Calendar className="h-8 w-8 text-blue-500" />
+                <div>
+                  <p className="text-2xl font-bold">{logs.length}</p>
+                  <p className="text-sm text-muted-foreground">Total événements</p>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <XCircle className="h-8 w-8 text-destructive" />
-              <div>
-                <p className="text-2xl font-bold">{logs.filter(l => l.level === 'error').length}</p>
-                <p className="text-sm text-muted-foreground">Erreurs</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertCircle className="h-8 w-8 text-warning" />
-              <div>
-                <p className="text-2xl font-bold">{logs.filter(l => l.level === 'warning').length}</p>
-                <p className="text-sm text-muted-foreground">Avertissements</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-info" />
-              <div>
-                <p className="text-2xl font-bold">{logs.length}</p>
-                <p className="text-sm text-muted-foreground">Total événements</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtres et recherche */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recherche et filtres</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Recherche et filtres</CardTitle>
+            <CardDescription>Filtrez et recherchez dans les logs</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Recherche dans les logs</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher dans les logs..."
+                  placeholder="Rechercher..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -257,26 +257,52 @@ export default function LogsTab() {
               </div>
             </div>
             
-            <Select value={levelFilter} onValueChange={setLevelFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filtrer par niveau" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les niveaux</SelectItem>
-                <SelectItem value="success">Succès</SelectItem>
-                <SelectItem value="info">Information</SelectItem>
-                <SelectItem value="warning">Avertissement</SelectItem>
-                <SelectItem value="error">Erreur</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="space-y-2">
+              <Label>Filtrer par niveau</Label>
+              <Select value={levelFilter} onValueChange={setLevelFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les niveaux" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les niveaux</SelectItem>
+                  <SelectItem value="success">Succès</SelectItem>
+                  <SelectItem value="info">Information</SelectItem>
+                  <SelectItem value="warning">Avertissement</SelectItem>
+                  <SelectItem value="error">Erreur</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
             
-            <Button variant="outline" size="sm">
-              <Trash2 className="h-4 w-4 mr-2" />
-              Purger anciens
+            <div className="pt-2 text-xs text-muted-foreground">
+              <p>{filteredLogs.length} événement(s) trouvé(s)</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Actions rapides</CardTitle>
+            <CardDescription>Exportation et maintenance des logs</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button onClick={exportLogs} variant="outline" className="w-full">
+              <Download className="h-4 w-4 mr-2" />
+              Exporter en CSV
             </Button>
-          </div>
-        </CardContent>
-      </Card>
+            
+            <Button variant="outline" className="w-full">
+              <Trash2 className="h-4 w-4 mr-2" />
+              Purger les anciens logs
+            </Button>
+            
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>• L'export inclut tous les logs filtrés</p>
+              <p>• La purge supprime les logs &gt; 30 jours</p>
+              <p>• Les logs critiques sont conservés</p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Table des logs */}
       <Card>

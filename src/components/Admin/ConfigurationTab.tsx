@@ -60,33 +60,31 @@ export default function ConfigurationTab() {
         </p>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Configuration AWS S3 */}
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader>
-            <CardTitle className="flex items-center justify-between">
+            <CardTitle className="flex items-center gap-2">
               Configuration AWS
-              <div className="flex items-center space-x-2">
-                {connectionStatus === "success" && (
-                  <Badge variant="default" className="bg-success text-success-foreground">
-                    <CheckCircle className="h-3 w-3 mr-1" />
-                    Connecté
-                  </Badge>
-                )}
-                {connectionStatus === "error" && (
-                  <Badge variant="destructive">
-                    <XCircle className="h-3 w-3 mr-1" />
-                    Erreur
-                  </Badge>
-                )}
-              </div>
+              {connectionStatus === "success" && (
+                <Badge variant="default" className="bg-green-500 text-white">
+                  <CheckCircle className="h-3 w-3 mr-1" />
+                  Connecté
+                </Badge>
+              )}
+              {connectionStatus === "error" && (
+                <Badge variant="destructive">
+                  <XCircle className="h-3 w-3 mr-1" />
+                  Erreur
+                </Badge>
+              )}
             </CardTitle>
             <CardDescription>
               Identifiants et paramètres de votre compte Amazon S3
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="accessKey">Clé d'accès AWS</Label>
                 <Input
@@ -107,9 +105,6 @@ export default function ConfigurationTab() {
                   onChange={(e) => setConfig({...config, awsSecretKey: e.target.value})}
                 />
               </div>
-            </div>
-            
-            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="region">Région AWS</Label>
                 <Input
@@ -129,26 +124,11 @@ export default function ConfigurationTab() {
                 />
               </div>
             </div>
-
-            <Button 
-              onClick={testS3Connection} 
-              disabled={isTestingConnection}
-              className="w-full"
-            >
-              {isTestingConnection ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Test en cours...
-                </>
-              ) : (
-                "Tester la connexion S3"
-              )}
-            </Button>
           </CardContent>
         </Card>
 
         {/* Options d'upload */}
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Options d'upload</CardTitle>
             <CardDescription>
@@ -171,7 +151,7 @@ export default function ConfigurationTab() {
 
             <Separator />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="maxSize">Limite de taille par fichier</Label>
                 <Input
@@ -199,9 +179,44 @@ export default function ConfigurationTab() {
           </CardContent>
         </Card>
 
-        <Button onClick={saveConfiguration} className="w-full">
-          Sauvegarder la configuration
-        </Button>
+        {/* Test et sauvegarde */}
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Test et sauvegarde</CardTitle>
+            <CardDescription>
+              Testez la connexion S3 et sauvegardez vos paramètres
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button 
+              onClick={testS3Connection} 
+              disabled={isTestingConnection}
+              className="w-full"
+              variant="outline"
+            >
+              {isTestingConnection ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Test en cours...
+                </>
+              ) : (
+                "Tester la connexion S3"
+              )}
+            </Button>
+            
+            <Separator />
+            
+            <Button onClick={saveConfiguration} className="w-full">
+              Sauvegarder la configuration
+            </Button>
+            
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>• Vérifiez la connexion avant de sauvegarder</p>
+              <p>• Les modifications prennent effet immédiatement</p>
+              <p>• Les uploads en cours ne sont pas affectés</p>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -192,39 +192,82 @@ export default function DiagnosticTab() {
       )}
 
       {/* Résumé des résultats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <CheckCircle className="h-8 w-8 text-success" />
-              <div>
-                <p className="text-2xl font-bold">{successCount}</p>
-                <p className="text-sm text-muted-foreground">Tests réussis</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Résultats des tests</CardTitle>
+            <CardDescription>État général du système</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="h-8 w-8 text-green-500" />
+                <div>
+                  <p className="text-2xl font-bold">{successCount}</p>
+                  <p className="text-sm text-muted-foreground">Tests réussis</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <AlertCircle className="h-8 w-8 text-orange-500" />
+                <div>
+                  <p className="text-2xl font-bold">{warningCount}</p>
+                  <p className="text-sm text-muted-foreground">Avertissements</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <XCircle className="h-8 w-8 text-destructive" />
+                <div>
+                  <p className="text-2xl font-bold">{errorCount}</p>
+                  <p className="text-sm text-muted-foreground">Erreurs critiques</p>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <AlertCircle className="h-8 w-8 text-warning" />
-              <div>
-                <p className="text-2xl font-bold">{warningCount}</p>
-                <p className="text-sm text-muted-foreground">Avertissements</p>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Actions de diagnostic</CardTitle>
+            <CardDescription>Contrôles et maintenance du système</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button 
+              onClick={runDiagnostic} 
+              disabled={isRunning}
+              className="w-full"
+            >
+              {isRunning ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Diagnostic en cours...
+                </>
+              ) : (
+                "Lancer le diagnostic complet"
+              )}
+            </Button>
+            
+            {/* Barre de progression */}
+            {isRunning && (
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>Diagnostic en cours...</span>
+                  <span>{Math.round(progress)}%</span>
+                </div>
+                <Progress value={progress} className="h-2" />
               </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <XCircle className="h-8 w-8 text-destructive" />
-              <div>
-                <p className="text-2xl font-bold">{errorCount}</p>
-                <p className="text-sm text-muted-foreground">Erreurs critiques</p>
-              </div>
+            )}
+            
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>• Vérification de la connectivité S3</p>
+              <p>• Test des permissions et endpoints</p>
+              <p>• Analyse des ressources serveur</p>
+              <p>• Contrôle des certificats SSL</p>
             </div>
           </CardContent>
         </Card>

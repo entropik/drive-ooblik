@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { 
@@ -132,68 +133,57 @@ export default function FilesTab() {
       </div>
 
       {/* Statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <FileText className="h-8 w-8 text-primary" />
-              <div>
-                <p className="text-2xl font-bold">{files.length}</p>
-                <p className="text-sm text-muted-foreground">Fichiers total</p>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Statistiques générales</CardTitle>
+            <CardDescription>Vue d'ensemble des fichiers uploadés</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <FileText className="h-8 w-8 text-primary" />
+                <div>
+                  <p className="text-2xl font-bold">{files.length}</p>
+                  <p className="text-sm text-muted-foreground">Fichiers total</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <HardDrive className="h-8 w-8 text-green-500" />
+                <div>
+                  <p className="text-2xl font-bold">{formatFileSize(totalSize)}</p>
+                  <p className="text-sm text-muted-foreground">Espace utilisé</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <User className="h-8 w-8 text-blue-500" />
+                <div>
+                  <p className="text-2xl font-bold">{new Set(files.map(f => f.customerEmail)).size}</p>
+                  <p className="text-sm text-muted-foreground">Clients actifs</p>
+                </div>
               </div>
             </div>
           </CardContent>
         </Card>
         
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <HardDrive className="h-8 w-8 text-success" />
-              <div>
-                <p className="text-2xl font-bold">{formatFileSize(totalSize)}</p>
-                <p className="text-sm text-muted-foreground">Espace utilisé</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <User className="h-8 w-8 text-info" />
-              <div>
-                <p className="text-2xl font-bold">{new Set(files.map(f => f.customerEmail)).size}</p>
-                <p className="text-sm text-muted-foreground">Clients actifs</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-2">
-              <Calendar className="h-8 w-8 text-warning" />
-              <div>
-                <p className="text-2xl font-bold">7</p>
-                <p className="text-sm text-muted-foreground">Derniers jours</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filtres et recherche */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recherche et filtres</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1">
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Recherche et filtres</CardTitle>
+            <CardDescription>Trouvez rapidement les fichiers recherchés</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Recherche globale</Label>
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Rechercher par nom de fichier, email ou commande..."
+                  placeholder="Nom, email ou commande..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-9"
@@ -201,20 +191,58 @@ export default function FilesTab() {
               </div>
             </div>
             
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filtrer par statut" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="completed">Complétés</SelectItem>
-                <SelectItem value="processing">En cours</SelectItem>
-                <SelectItem value="failed">Échec</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-      </Card>
+            <div className="space-y-2">
+              <Label>Filtrer par statut</Label>
+              <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Tous les statuts" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tous les statuts</SelectItem>
+                  <SelectItem value="completed">Complétés</SelectItem>
+                  <SelectItem value="processing">En cours</SelectItem>
+                  <SelectItem value="failed">Échec</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="pt-2 text-xs text-muted-foreground">
+              <p>{filteredFiles.length} fichier(s) trouvé(s)</p>
+            </div>
+          </CardContent>
+        </Card>
+        
+        <Card className="lg:col-span-1">
+          <CardHeader>
+            <CardTitle>Analyse rapide</CardTitle>
+            <CardDescription>Répartition par statut et activité récente</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Complétés</span>
+                <span className="text-sm font-medium">{files.filter(f => f.status === 'completed').length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">En cours</span>
+                <span className="text-sm font-medium">{files.filter(f => f.status === 'processing').length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm text-muted-foreground">Échoués</span>
+                <span className="text-sm font-medium">{files.filter(f => f.status === 'failed').length}</span>
+              </div>
+            </div>
+            
+            <div className="flex items-center space-x-2 pt-2">
+              <Calendar className="h-6 w-6 text-orange-500" />
+              <div>
+                <p className="text-lg font-bold">7</p>
+                <p className="text-xs text-muted-foreground">Derniers jours d'activité</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Table des fichiers */}
       <Card>
