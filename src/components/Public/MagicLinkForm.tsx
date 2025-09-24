@@ -105,16 +105,15 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
               <span>Lien d'accès généré !</span>
             </div>
             <div className="text-xs text-muted-foreground">
-              (En développement - le lien sera envoyé par email en production)
+              (En développement - cliquez sur "Accéder" pour vous connecter)
             </div>
           </div>,
           {
             duration: 15000,
             action: {
-              label: "📋 Copier le lien",
+              label: "🚀 Accéder",
               onClick: () => {
-                navigator.clipboard.writeText(data.magic_link);
-                toast.success("Lien copié !");
+                window.location.href = data.magic_link;
               }
             }
           }
@@ -129,7 +128,7 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
         );
       }
       
-      onSuccess({ email: email.trim().toLowerCase(), space_name: spaceName.trim(), token: data.magic_token });
+      // Ne pas appeler onSuccess ici - l'utilisateur doit cliquer sur le lien magic
 
     } catch (error) {
       console.error('Erreur magic link:', error);

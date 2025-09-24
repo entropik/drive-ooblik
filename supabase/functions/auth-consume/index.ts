@@ -99,7 +99,7 @@ serve(async (req: Request) => {
     }
 
     // Redirection vers le frontend avec le session token sécurisé
-    const origin = req.headers.get('origin') || 'https://id-preview--2a6e92db-f750-4f00-b532-ae0113580339.lovable.app';
+    const origin = req.headers.get('origin') || req.headers.get('referer')?.split('/').slice(0, 3).join('/') || 'https://woo-s3-drive.lovable.app';
     const redirectUrl = `${origin}/?session=${sessionToken}&space=${encodeURIComponent(space.space_name)}`;
     
     return new Response(null, {
