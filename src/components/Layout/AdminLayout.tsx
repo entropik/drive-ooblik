@@ -5,7 +5,9 @@ import {
   FileText, 
   Activity, 
   Stethoscope,
-  Upload
+  Upload,
+  User,
+  Mail
 } from "lucide-react";
 
 import { LogOut } from "lucide-react";
@@ -13,13 +15,15 @@ import { Button } from "@/components/ui/button";
 
 interface AdminLayoutProps {
   children: ReactNode;
-  activeTab: "config" | "files" | "logs" | "diagnostic";
-  onTabChange: (tab: "config" | "files" | "logs" | "diagnostic") => void;
+  activeTab: "account" | "smtp" | "config" | "files" | "logs" | "diagnostic";
+  onTabChange: (tab: "account" | "smtp" | "config" | "files" | "logs" | "diagnostic") => void;
   onLogout?: () => void;
 }
 
 const tabs = [
-  { id: "config" as const, label: "Configuration", icon: Settings },
+  { id: "account" as const, label: "Compte", icon: User },
+  { id: "smtp" as const, label: "SMTP", icon: Mail },
+  { id: "config" as const, label: "S3", icon: Settings },
   { id: "files" as const, label: "Fichiers", icon: FileText },
   { id: "logs" as const, label: "Logs", icon: Activity },
   { id: "diagnostic" as const, label: "Diagnostic", icon: Stethoscope },

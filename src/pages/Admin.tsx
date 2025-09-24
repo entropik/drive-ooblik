@@ -5,12 +5,14 @@ import ConfigurationTab from "@/components/Admin/ConfigurationTab";
 import FilesTab from "@/components/Admin/FilesTab";
 import LogsTab from "@/components/Admin/LogsTab";  
 import DiagnosticTab from "@/components/Admin/DiagnosticTab";
+import AdminAccountTab from "@/components/Admin/AdminAccountTab";
+import SMTPConfigTab from "@/components/Admin/SMTPConfigTab";
 import AdminLogin from "@/components/Admin/AdminLogin";
 import SessionExpiredDialog from "@/components/Admin/SessionExpiredDialog";
 import { toast } from "sonner";
 
 const Admin = () => {
-  const [activeTab, setActiveTab] = useState<"config" | "files" | "logs" | "diagnostic">("config");
+  const [activeTab, setActiveTab] = useState<"account" | "smtp" | "config" | "files" | "logs" | "diagnostic">("account");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [sessionExpired, setSessionExpired] = useState(false);
@@ -116,6 +118,10 @@ const Admin = () => {
 
   const renderContent = () => {
     switch (activeTab) {
+      case "account":
+        return <AdminAccountTab />;
+      case "smtp":
+        return <SMTPConfigTab />;
       case "config":
         return <ConfigurationTab />;
       case "files":
@@ -125,7 +131,7 @@ const Admin = () => {
       case "diagnostic":
         return <DiagnosticTab />;
       default:
-        return <ConfigurationTab />;
+        return <AdminAccountTab />;
     }
   };
 

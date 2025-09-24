@@ -12,5 +12,11 @@ verify_jwt = false
 [functions.admin-auth]
 verify_jwt = false
 
+[functions.admin-update]
+verify_jwt = false
+
+[functions.test-smtp]
+verify_jwt = false
+
 [functions.session-cleanup]
 verify_jwt = false
