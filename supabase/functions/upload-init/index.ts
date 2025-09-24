@@ -126,6 +126,20 @@ serve(async (req: Request) => {
       );
     }
 
+    // Get minimal space info for file operations (name only)
+    const { data: spaceInfo, error: spaceError } = await supabase
+      .from('spaces')
+      .select('space_name')
+      .eq('id', sessionData.space_id)
+      .single();
+
+    if (spaceError || !spaceInfo) {
+      return new Response(
+        JSON.stringify({ error: 'Espace non trouvé' }),
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const { filename, file_size, mime_type }: UploadInitRequest = await req.json();
 
     if (!filename || !file_size || !mime_type) {
@@ -170,7 +184,7 @@ serve(async (req: Request) => {
 
     // Génération de la clé S3 (using session data without email)
     const s3Key = buildS3Key(namingConfig.schema, namingConfig.options, { 
-      space_name: sessionData.space_name,
+      space_name: spaceInfo.space_name,
       email: '[PROTECTED]' // Never expose email in S3 keys
     }, filename);
     
