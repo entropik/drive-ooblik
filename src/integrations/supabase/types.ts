@@ -249,7 +249,7 @@ export type Database = {
         Returns: undefined
       }
       verify_admin_session: {
-        Args: { session_token: string }
+        Args: { p_session_token: string }
         Returns: {
           admin_user_id: string
           email: string
