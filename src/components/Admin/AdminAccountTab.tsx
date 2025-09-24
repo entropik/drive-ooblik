@@ -22,7 +22,6 @@ export default function AdminAccountTab() {
   const { toast } = useToast();
 
   const [passwordData, setPasswordData] = useState({
-    currentPassword: "",
     newPassword: "",
     confirmPassword: ""
   });
@@ -32,7 +31,6 @@ export default function AdminAccountTab() {
   });
 
   const [showPasswords, setShowPasswords] = useState({
-    current: false,
     new: false,
     confirm: false
   });
@@ -111,7 +109,6 @@ export default function AdminAccountTab() {
         },
         body: JSON.stringify({
           action: 'update_password',
-          currentPassword: passwordData.currentPassword,
           newPassword: passwordData.newPassword
         })
       });
@@ -121,7 +118,7 @@ export default function AdminAccountTab() {
           title: "Mot de passe mis à jour",
           description: "Votre mot de passe a été modifié avec succès"
         });
-        setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+        setPasswordData({ newPassword: "", confirmPassword: "" });
       } else {
         const error = await response.json();
         throw new Error(error.error || 'Erreur de mise à jour');
@@ -262,32 +259,6 @@ export default function AdminAccountTab() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="currentPassword">Mot de passe actuel</Label>
-              <div className="relative">
-                <Input
-                  id="currentPassword"
-                  type={showPasswords.current ? "text" : "password"}
-                  value={passwordData.currentPassword}
-                  onChange={(e) => setPasswordData({...passwordData, currentPassword: e.target.value})}
-                  placeholder="Saisissez votre mot de passe actuel"
-                  className="pr-10"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                  onClick={() => setShowPasswords({...showPasswords, current: !showPasswords.current})}
-                >
-                  {showPasswords.current ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}
-                </Button>
-              </div>
-            </div>
             
             <div className="space-y-2">
               <Label htmlFor="newPassword">Nouveau mot de passe</Label>

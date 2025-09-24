@@ -59,7 +59,7 @@ serve(async (req: Request) => {
   }
 
   try {
-    const { action, currentPassword, newPassword, email } = await req.json();
+    const { action, newPassword, email } = await req.json();
 
     // Vérification du token de session
     const sessionToken = extractToken(req);
@@ -84,29 +84,6 @@ serve(async (req: Request) => {
     const adminUserId = sessionData[0].admin_user_id;
 
     if (action === 'update_password') {
-      // Vérification mot de passe actuel
-      const { data: userData, error: userError } = await supabase
-        .from('admin_users')
-        .select('password_hash')
-        .eq('id', adminUserId)
-        .single();
-
-      if (userError || !userData) {
-        return new Response(JSON.stringify({ error: 'Utilisateur introuvable' }), {
-          status: 404,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
-      // Vérifier l'ancien mot de passe
-      const isValidPassword = await verifyPassword(currentPassword, userData.password_hash);
-      if (!isValidPassword) {
-        return new Response(JSON.stringify({ error: 'Mot de passe actuel incorrect' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-      }
-
       // Hasher le nouveau mot de passe
       const newPasswordHash = await hashPassword(newPassword);
 
