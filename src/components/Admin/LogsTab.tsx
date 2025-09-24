@@ -25,11 +25,35 @@ interface LogEntry {
   message: string;
   user?: string;
   details?: string;
+  email_recipient?: string;
+  email_subject?: string;
 }
 
 const mockLogs: LogEntry[] = [
   {
     id: "1",
+    timestamp: "2024-01-15T11:15:33Z",
+    level: "success",
+    action: "email_sent",
+    message: "Email de confirmation envoyé avec succès",
+    user: "admin@site.com",
+    email_recipient: "client@exemple.com",
+    email_subject: "Confirmation de réception de votre fichier",
+    details: "Serveur SMTP: smtp.gmail.com:587, Temps: 1.2s"
+  },
+  {
+    id: "2",
+    timestamp: "2024-01-15T10:45:22Z",
+    level: "error",
+    action: "email_failed",
+    message: "Échec de l'envoi d'email: connexion SMTP impossible",
+    user: "admin@site.com",
+    email_recipient: "invalide@domaine.com",
+    email_subject: "Notification d'upload",
+    details: "Erreur: Connection timeout après 30s"
+  },
+  {
+    id: "3",
     timestamp: "2024-01-15T10:35:22Z",
     level: "success",
     action: "file_upload",
@@ -38,15 +62,16 @@ const mockLogs: LogEntry[] = [
     details: "Taille: 2.4MB, Bucket: mon-bucket-s3"
   },
   {
-    id: "2",
+    id: "4",
     timestamp: "2024-01-15T10:30:15Z",
     level: "info",
-    action: "s3_connection",
-    message: "Test de connexion S3 initié",
-    user: "admin@site.com"
+    action: "smtp_test",
+    message: "Test de connexion SMTP initié",
+    user: "admin@site.com",
+    details: "Serveur: smtp.gmail.com:587"
   },
   {
-    id: "3",
+    id: "5",
     timestamp: "2024-01-15T10:25:08Z",
     level: "error",
     action: "file_upload",
@@ -55,7 +80,18 @@ const mockLogs: LogEntry[] = [
     details: "Taille: 2.1GB, Limite: 1GB"
   },
   {
-    id: "4",
+    id: "6",
+    timestamp: "2024-01-15T09:55:17Z",
+    level: "warning",
+    action: "email_bounce",
+    message: "Email retourné: adresse invalide",
+    user: "system",
+    email_recipient: "ancien@client.fr",
+    email_subject: "Lien de téléchargement",
+    details: "Bounce reason: Mailbox does not exist"
+  },
+  {
+    id: "7",
     timestamp: "2024-01-15T09:45:33Z",
     level: "warning",
     action: "config_change",
@@ -64,7 +100,18 @@ const mockLogs: LogEntry[] = [
     details: "Changement de région: us-east-1 → eu-west-1"
   },
   {
-    id: "5",
+    id: "8",
+    timestamp: "2024-01-15T09:30:12Z",
+    level: "success",
+    action: "email_sent",
+    message: "Email de notification envoyé",
+    user: "system",
+    email_recipient: "admin@site.com",
+    email_subject: "Rapport quotidien d'activité",
+    details: "Auto-généré, 15 fichiers traités aujourd'hui"
+  },
+  {
+    id: "9",
     timestamp: "2024-01-15T09:20:17Z",
     level: "success",
     action: "s3_connection",
@@ -72,7 +119,7 @@ const mockLogs: LogEntry[] = [
     user: "admin@site.com"
   },
   {
-    id: "6",
+    id: "10",
     timestamp: "2024-01-14T16:22:45Z",
     level: "info",
     action: "file_delete",
@@ -139,6 +186,10 @@ export default function LogsTab() {
       file_delete: "Suppression fichier",
       s3_connection: "Connexion S3",
       config_change: "Config modifiée",
+      email_sent: "Email envoyé",
+      email_failed: "Email échoué",
+      email_bounce: "Email retourné",
+      smtp_test: "Test SMTP",
     };
     return actions[action] || action;
   };
@@ -148,16 +199,18 @@ export default function LogsTab() {
       log.message.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
       (log.user && log.user.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      (log.details && log.details.toLowerCase().includes(searchTerm.toLowerCase()));
+      (log.details && log.details.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (log.email_recipient && log.email_recipient.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (log.email_subject && log.email_subject.toLowerCase().includes(searchTerm.toLowerCase()));
     const matchesLevel = levelFilter === "all" || log.level === levelFilter;
     return matchesSearch && matchesLevel;
   });
 
   const exportLogs = () => {
     const csvContent = [
-      "Timestamp,Level,Action,Message,User,Details",
+      "Timestamp,Level,Action,Message,User,Email_Recipient,Email_Subject,Details",
       ...filteredLogs.map(log => 
-        `"${log.timestamp}","${log.level}","${log.action}","${log.message}","${log.user || ''}","${log.details || ''}"`
+        `"${log.timestamp}","${log.level}","${log.action}","${log.message}","${log.user || ''}","${log.email_recipient || ''}","${log.email_subject || ''}","${log.details || ''}"`
       )
     ].join("\n");
     
@@ -318,6 +371,7 @@ export default function LogsTab() {
                 <TableHead>Action</TableHead>
                 <TableHead>Message</TableHead>
                 <TableHead>Utilisateur</TableHead>
+                <TableHead>Email</TableHead>
                 <TableHead>Détails</TableHead>
               </TableRow>
             </TableHeader>
@@ -339,6 +393,18 @@ export default function LogsTab() {
                       <Badge variant="secondary" className="font-mono text-xs">
                         {log.user}
                       </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell className="max-w-xs">
+                    {log.email_recipient && (
+                      <div className="space-y-1">
+                        <div className="text-xs text-muted-foreground">À: {log.email_recipient}</div>
+                        {log.email_subject && (
+                          <div className="text-xs font-medium line-clamp-1" title={log.email_subject}>
+                            {log.email_subject}
+                          </div>
+                        )}
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="max-w-xs">
