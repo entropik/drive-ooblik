@@ -30,11 +30,20 @@ async function verifyHCaptcha(token: string): Promise<boolean> {
   try {
     // Note: En production, vous devrez configurer votre clé secrète hCaptcha
     const hcaptchaSecret = Deno.env.get('HCAPTCHA_SECRET_KEY');
+    console.log('hCaptcha verification - Secret exists:', !!hcaptchaSecret);
+    console.log('hCaptcha verification - Token received:', !!token);
+    
     if (!hcaptchaSecret) {
       console.warn('hCaptcha not configured, skipping verification');
       return true; // En dev, on skip la vérification
     }
 
+    if (!token) {
+      console.error('hCaptcha token is empty or undefined');
+      return false;
+    }
+
+    console.log('Calling hCaptcha siteverify API...');
     const response = await fetch('https://hcaptcha.com/siteverify', {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -42,6 +51,7 @@ async function verifyHCaptcha(token: string): Promise<boolean> {
     });
 
     const result = await response.json();
+    console.log('hCaptcha verification result:', result);
     return result.success;
   } catch (error) {
     console.error('hCaptcha verification error:', error);
