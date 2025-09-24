@@ -17,11 +17,11 @@ interface UploadFile {
 }
 
 interface FileUploadZoneProps {
-  magicToken: string;
+  sessionToken: string; // Use session token instead of magic token
   onComplete: (files: UploadFile[]) => void;
 }
 
-const FileUploadZone = ({ magicToken, onComplete }: FileUploadZoneProps) => {
+const FileUploadZone = ({ sessionToken, onComplete }: FileUploadZoneProps) => {
   const [files, setFiles] = useState<UploadFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -67,7 +67,7 @@ const FileUploadZone = ({ magicToken, onComplete }: FileUploadZoneProps) => {
         headers: {
           'Content-Type': 'application/json',
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
-          'x-magic-token': magicToken
+          'x-session-token': sessionToken // Use secure session token instead of magic token
         },
         body: JSON.stringify({
           filename: file.file.name,

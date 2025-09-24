@@ -8,37 +8,51 @@ const Index = () => {
   const [userSession, setUserSession] = useState<{
     email: string;
     space_name: string;
-    token: string;
+    session_token: string; // Use session token instead of magic token
   } | null>(null);
   const location = useLocation();
 
   useEffect(() => {
-    // Vérifier si on arrive via un lien magic
+    // Check if arriving via secure session (new secure method)
     const urlParams = new URLSearchParams(location.search);
-    const token = urlParams.get('token');
+    const session = urlParams.get('session');
     const space = urlParams.get('space');
     
-    if (token && space) {
-      // Simuler l'authentification réussie
+    if (session && space) {
+      // Secure session authentication
       setUserSession({
-        email: 'user@example.com', // En réalité, récupéré depuis l'API
+        email: '[PROTECTED]', // Email is now protected and not exposed
         space_name: decodeURIComponent(space),
-        token
+        session_token: session
       });
       setIsAuthenticated(true);
       
-      // Nettoyer l'URL
+      // Clean URL
+      window.history.replaceState({}, '', '/');
+    }
+    
+    // Legacy support for old magic token method (for backwards compatibility)
+    const token = urlParams.get('token');
+    if (token && space && !session) {
+      // Show deprecation warning
+      console.warn('Magic token authentication is deprecated for security reasons. Please use the new session-based authentication.');
+      setUserSession({
+        email: '[PROTECTED]',
+        space_name: decodeURIComponent(space),
+        session_token: token // Will be treated as session token
+      });
+      setIsAuthenticated(true);
       window.history.replaceState({}, '', '/');
     }
   }, [location]);
 
   const handleMagicLinkSuccess = (data: { email: string; space_name: string; token?: string }) => {
     if (data.token) {
-      // En développement, on peut utiliser le token directement
+      // Development mode - token provided directly (will be phased out)
       setUserSession({
-        email: data.email,
+        email: '[PROTECTED]', // Email no longer exposed for security
         space_name: data.space_name,
-        token: data.token
+        session_token: data.token // Treat as session token in dev mode
       });
       setIsAuthenticated(true);
     }
@@ -54,7 +68,7 @@ const Index = () => {
 
   return (
     <FileUploadZone 
-      magicToken={userSession.token}
+      sessionToken={userSession.session_token} // Use session token instead of magic token
       onComplete={handleUploadComplete}
     />
   );

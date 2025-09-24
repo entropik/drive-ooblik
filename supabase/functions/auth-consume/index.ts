@@ -57,8 +57,13 @@ serve(async (req: Request) => {
       return new Response('Token invalide ou expiré', { status: 400, headers: corsHeaders });
     }
 
-    // Security: Invalidate the magic token after successful verification (token rotation)
-    // and update the space as authenticated
+    // Security: Create secure session instead of exposing magic token
+    // Generate a secure session token for post-authentication access
+    const sessionToken = crypto.randomUUID();
+    const sessionExpiry = new Date(Date.now() + 4 * 60 * 60 * 1000); // 4 hours session
+    const userAgent = req.headers.get('user-agent') || 'unknown';
+
+    // Invalidate the magic token and update the space as authenticated
     await supabase
       .from('spaces')
       .update({ 
@@ -68,20 +73,34 @@ serve(async (req: Request) => {
       })
       .eq('id', space.id);
 
+    // Create secure session
+    const { error: sessionError } = await supabase
+      .from('user_sessions')
+      .insert({
+        space_id: space.id,
+        session_token: sessionToken,
+        expires_at: sessionExpiry.toISOString(),
+        ip_address: clientIP,
+        user_agent: userAgent
+      });
+
     // Log de l'événement
     await supabase.from('logs').insert({
       event_type: 'auth',
       space_id: space.id,
-      details: { action: 'magic_link_consumed', email: space.email },
-      ip_address: (req.headers.get('x-forwarded-for')?.split(',')[0]?.trim()) || null,
-      user_agent: req.headers.get('user-agent') || 'unknown'
+      details: { action: 'magic_link_consumed', email: space.email, session_created: !sessionError },
+      ip_address: clientIP,
+      user_agent: userAgent
     });
 
-    console.log(`Magic token consommé pour ${space.email} (espace: ${space.space_name})`);
+    if (sessionError) {
+      console.error('Session creation error:', sessionError);
+      return new Response('Session creation failed', { status: 500, headers: corsHeaders });
+    }
 
-    // Redirection vers le frontend avec le token
+    // Redirection vers le frontend avec le session token sécurisé
     const origin = req.headers.get('origin') || 'https://id-preview--2a6e92db-f750-4f00-b532-ae0113580339.lovable.app';
-    const redirectUrl = `${origin}/?token=${token}&space=${encodeURIComponent(space.space_name)}`;
+    const redirectUrl = `${origin}/?session=${sessionToken}&space=${encodeURIComponent(space.space_name)}`;
     
     return new Response(null, {
       status: 302,

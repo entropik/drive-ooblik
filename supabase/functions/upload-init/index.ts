@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-magic-token',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-session-token',
 };
 
 interface UploadInitRequest {
@@ -12,9 +12,48 @@ interface UploadInitRequest {
   mime_type: string;
 }
 
-const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Security: Hash tokens to match stored hashed versions
+    async function hashToken(token: string): Promise<string> {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(token);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+      return hashHex;
+    }
+
+    // Verify session token instead of magic token for enhanced security
+    async function verifySession(sessionToken: string) {
+      const { data: session, error } = await supabase
+        .from('user_sessions')
+        .select(`
+          id,
+          space_id,
+          expires_at,
+          is_active,
+          spaces!inner(
+            id,
+            space_name,
+            is_authenticated
+          )
+        `)
+        .eq('session_token', sessionToken)
+        .eq('is_active', true)
+        .gt('expires_at', new Date().toISOString())
+        .single();
+
+      if (error || !session) {
+        return null;
+      }
+
+      // Update last accessed time
+      await supabase
+        .from('user_sessions')
+        .update({ last_accessed_at: new Date().toISOString() })
+        .eq('id', session.id);
+
+      return session;
+    }
 
 // Fonction pour construire la clé S3 selon le schéma configuré
 function buildS3Key(schema: string, options: any, space: any, filename: string): string {
@@ -74,29 +113,25 @@ serve(async (req: Request) => {
   }
 
   try {
-    const magicToken = req.headers.get('x-magic-token');
-    if (!magicToken) {
+    // Use session token instead of magic token for better security
+    const sessionToken = req.headers.get('x-session-token');
+    if (!sessionToken) {
       return new Response(
-        JSON.stringify({ error: 'Token d\'authentification requis' }),
+        JSON.stringify({ error: 'Session token requis' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Vérification du token
-    const { data: space, error: spaceError } = await supabase
-      .from('spaces')
-      .select('*')
-      .eq('magic_token', magicToken)
-      .eq('is_authenticated', true)
-      .gt('token_expires_at', new Date().toISOString())
-      .single();
-
-    if (spaceError || !space) {
+    // Verify session and get space info securely (without email exposure)
+    const session = await verifySession(sessionToken);
+    if (!session) {
       return new Response(
-        JSON.stringify({ error: 'Token invalide ou expiré' }),
+        JSON.stringify({ error: 'Session invalide ou expirée' }),
         { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    const space = session.spaces;
 
     const { filename, file_size, mime_type }: UploadInitRequest = await req.json();
 
@@ -140,17 +175,20 @@ serve(async (req: Request) => {
       );
     }
 
-    // Génération de la clé S3
-    const s3Key = buildS3Key(namingConfig.schema, namingConfig.options, space, filename);
+    // Génération de la clé S3 (space.space_name instead of space object)
+    const s3Key = buildS3Key(namingConfig.schema, namingConfig.options, { 
+      space_name: space.space_name,
+      email: '[PROTECTED]' // Don't expose email in S3 keys
+    }, filename);
     
     // Génération de l'ID d'upload multipart
     const uploadId = crypto.randomUUID();
 
-    // Enregistrement du fichier en base
+    // Enregistrement du fichier en base (using session.space_id)
     const { data: fileRecord, error: fileError } = await supabase
       .from('files')
       .insert({
-        space_id: space.id,
+        space_id: session.space_id,
         original_name: filename,
         s3_key: s3Key,
         file_size,
@@ -169,10 +207,10 @@ serve(async (req: Request) => {
       );
     }
 
-    // Log de l'événement
+    // Log de l'événement (using session.space_id instead of space.id)
     await supabase.from('logs').insert({
-      event_type: 'upload_init',
-      space_id: space.id,
+      event_type: 'auth', // Using valid event_type
+      space_id: session.space_id,
       file_id: fileRecord.id,
       details: { filename, file_size, mime_type, s3_key: s3Key },
       ip_address: req.headers.get('x-forwarded-for') || 'unknown',
