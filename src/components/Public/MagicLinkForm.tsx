@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Mail, Shield, Upload } from "lucide-react";
+import { Mail, Shield, Upload, CheckCircle, AlertCircle } from "lucide-react";
+import HCaptcha from '@hcaptcha/react-hcaptcha';
 
 interface MagicLinkFormProps {
   onSuccess: (data: { email: string; space_name: string; token?: string }) => void;
@@ -14,13 +15,53 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
   const [email, setEmail] = useState("");
   const [spaceName, setSpaceName] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [captchaToken, setCaptchaToken] = useState<string | null>(null);
+  const [emailSent, setEmailSent] = useState(false);
+  const captchaRef = useRef<HCaptcha | null>(null);
+
+  // Clé publique hCaptcha (vous devez la configurer)
+  const HCAPTCHA_SITE_KEY = "10000000-ffff-ffff-ffff-000000000001"; // Clé de test, remplacez par votre vraie clé
+
+  const handleCaptchaVerify = (token: string) => {
+    setCaptchaToken(token);
+  };
+
+  const handleCaptchaExpire = () => {
+    setCaptchaToken(null);
+  };
+
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!email || !spaceName) {
-      toast.error("Veuillez remplir tous les champs");
+      toast.error("Veuillez remplir tous les champs", {
+        icon: <AlertCircle className="h-4 w-4" />
+      });
       return;
+    }
+
+    if (!validateEmail(email)) {
+      toast.error("Format d'email invalide", {
+        icon: <AlertCircle className="h-4 w-4" />
+      });
+      return;
+    }
+
+    // Déclencher le captcha invisible
+    if (!captchaToken && captchaRef.current) {
+      try {
+        await captchaRef.current.execute();
+      } catch (error) {
+        toast.error("Erreur de vérification anti-spam", {
+          icon: <AlertCircle className="h-4 w-4" />
+        });
+        return;
+      }
     }
 
     setIsLoading(true);
@@ -33,38 +74,79 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
         },
         body: JSON.stringify({
-          email,
-          space_name: spaceName,
-          hcaptcha_token: 'dev-token' // En dev, token fictif
+          email: email.trim().toLowerCase(),
+          space_name: spaceName.trim(),
+          hcaptcha_token: captchaToken || 'dev-token'
         })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.error || 'Erreur lors de la demande');
+        if (response.status === 429) {
+          toast.error("Trop de tentatives. Réessayez dans une heure.", {
+            icon: <AlertCircle className="h-4 w-4" />,
+            duration: 5000
+          });
+        } else {
+          throw new Error(data.error || 'Erreur lors de la demande');
+        }
+        return;
       }
 
+      setEmailSent(true);
+      
       if (data.magic_link) {
         // En développement, on affiche le lien directement
-        toast.success(`Lien d'accès généré ! Cliquez ici pour y accéder : ${data.magic_link}`, {
-          duration: 10000,
-          action: {
-            label: "Copier le lien",
-            onClick: () => navigator.clipboard.writeText(data.magic_link)
+        toast.success(
+          <div className="flex flex-col gap-2">
+            <div className="flex items-center gap-2">
+              <CheckCircle className="h-4 w-4" />
+              <span>Lien d'accès généré !</span>
+            </div>
+            <div className="text-xs text-muted-foreground">
+              (En développement - le lien sera envoyé par email en production)
+            </div>
+          </div>,
+          {
+            duration: 15000,
+            action: {
+              label: "📋 Copier le lien",
+              onClick: () => {
+                navigator.clipboard.writeText(data.magic_link);
+                toast.success("Lien copié !");
+              }
+            }
           }
-        });
+        );
       } else {
-        toast.success("Lien d'accès envoyé ! Vérifiez votre email.");
+        toast.success(
+          <div className="flex items-center gap-2">
+            <CheckCircle className="h-4 w-4" />
+            <span>Email envoyé ! Vérifiez votre boîte de réception.</span>
+          </div>,
+          { duration: 5000 }
+        );
       }
       
-      onSuccess({ email, space_name: spaceName, token: data.magic_token });
+      onSuccess({ email: email.trim().toLowerCase(), space_name: spaceName.trim(), token: data.magic_token });
 
     } catch (error) {
       console.error('Erreur magic link:', error);
-      toast.error(error instanceof Error ? error.message : "Erreur lors de l'envoi");
+      toast.error(
+        <div className="flex items-center gap-2">
+          <AlertCircle className="h-4 w-4" />
+          <span>{error instanceof Error ? error.message : "Erreur lors de l'envoi"}</span>
+        </div>,
+        { duration: 5000 }
+      );
     } finally {
       setIsLoading(false);
+      // Reset captcha for next attempt
+      setCaptchaToken(null);
+      if (captchaRef.current) {
+        captchaRef.current.resetCaptcha();
+      }
     }
   };
 
@@ -98,6 +180,7 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 className="w-full"
+                disabled={isLoading || emailSent}
               />
             </div>
 
@@ -114,6 +197,7 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
                 onChange={(e) => setSpaceName(e.target.value)}
                 required
                 className="w-full"
+                disabled={isLoading || emailSent}
               />
               <p className="text-xs text-muted-foreground flex items-center gap-1">
                 <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 20 20">
@@ -123,15 +207,29 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
               </p>
             </div>
 
+            {/* hCaptcha invisible */}
+            <HCaptcha
+              ref={captchaRef}
+              sitekey={HCAPTCHA_SITE_KEY}
+              size="invisible"
+              onVerify={handleCaptchaVerify}
+              onExpire={handleCaptchaExpire}
+            />
+
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || emailSent}
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
             >
               {isLoading ? (
                 <>
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
                   Envoi en cours...
+                </>
+              ) : emailSent ? (
+                <>
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Email envoyé !
                 </>
               ) : (
                 <>
