@@ -131,7 +131,7 @@ async function sendMagicLinkEmail(email: string, token: string, spaceName: strin
     <div style="text-align: center; margin: 32px 0;">
       <a href="${magicLink}" 
          style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; font-weight: 500; font-size: 14px; border: 1px solid #dc2626;">
-        Recevoir le lien d'accès
+        Accéder à mon espace de transfert
       </a>
     </div>
   </div>
