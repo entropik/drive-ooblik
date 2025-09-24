@@ -198,7 +198,7 @@ serve(async (req: Request) => {
     try {
       // Vérification sécurisée de la session en base
       const { data: sessionData, error } = await supabase.rpc('verify_admin_session', {
-        session_token: sessionToken
+        p_session_token: sessionToken
       });
 
       if (error) {

@@ -72,7 +72,7 @@ serve(async (req: Request) => {
 
     // Vérification de la session admin
     const { data: sessionData, error: sessionError } = await supabase
-      .rpc('verify_admin_session', { session_token: sessionToken });
+      .rpc('verify_admin_session', { p_session_token: sessionToken });
 
     if (sessionError || !sessionData || sessionData.length === 0 || !sessionData[0].is_valid) {
       return new Response(JSON.stringify({ error: 'Session invalide ou expirée' }), {
