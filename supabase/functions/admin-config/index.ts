@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-admin-session',
 };
 
 // Initialize Supabase client with service role key
@@ -23,6 +23,10 @@ function extractToken(req: Request): string | null {
   if (authHeader?.startsWith('Bearer ')) {
     return authHeader.substring(7);
   }
+
+  // Support custom header to avoid JWT gateway issues
+  const customHeader = req.headers.get('x-admin-session');
+  if (customHeader) return customHeader;
   
   return null;
 }

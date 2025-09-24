@@ -63,7 +63,7 @@ export default function SMTPConfigTab() {
         headers: {
           'Content-Type': 'application/json',
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(token ? { 'X-Admin-Session': token } : {}),
         },
         body: JSON.stringify({
           action: 'get_config',
@@ -92,14 +92,6 @@ export default function SMTPConfigTab() {
   };
 
   const saveSMTPConfig = async () => {
-    if (!config.auth.user || !config.auth.pass || !config.from.address) {
-      toast({
-        title: "Erreur",
-        description: "Veuillez remplir tous les champs obligatoires",
-        variant: "destructive"
-      });
-      return;
-    }
 
     setIsSaving(true);
     try {
@@ -109,7 +101,7 @@ export default function SMTPConfigTab() {
         headers: {
           'Content-Type': 'application/json',
           'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          ...(token ? { 'X-Admin-Session': token } : {}),
         },
         body: JSON.stringify({
           action: 'save_config',
