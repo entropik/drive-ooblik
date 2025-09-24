@@ -252,6 +252,7 @@ export type Database = {
         Args: { session_token: string }
         Returns: {
           admin_user_id: string
+          email: string
           is_valid: boolean
           username: string
         }[]

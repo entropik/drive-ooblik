@@ -209,9 +209,9 @@ export default function AdminAccountTab() {
         </p>
       </div>
 
-      <div className="grid gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Informations actuelles */}
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CheckCircle className="h-5 w-5 text-green-500" />
@@ -222,30 +222,30 @@ export default function AdminAccountTab() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="space-y-3">
               <div>
                 <Label className="text-sm font-medium">Nom d'utilisateur</Label>
                 <p className="text-sm text-muted-foreground">{adminUser?.username}</p>
               </div>
-              <Badge variant="secondary">Administrateur</Badge>
+              <Badge variant="secondary" className="w-fit">Administrateur</Badge>
             </div>
             
             <Separator />
             
-            <div className="flex items-center justify-between">
-              <div>
-                <Label className="text-sm font-medium">Email professionnel</Label>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Email professionnel</Label>
+              <div className="flex items-center gap-2">
                 <p className="text-sm text-muted-foreground">
                   {adminUser?.email || "Aucun email configuré"}
                 </p>
+                {adminUser?.email && <Mail className="h-4 w-4 text-green-500" />}
               </div>
-              {adminUser?.email && <Mail className="h-4 w-4 text-green-500" />}
             </div>
           </CardContent>
         </Card>
 
         {/* Modification du mot de passe */}
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />
@@ -267,27 +267,26 @@ export default function AdminAccountTab() {
               />
             </div>
             
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="newPassword">Nouveau mot de passe</Label>
-                <Input
-                  id="newPassword"
-                  type="password"
-                  value={passwordData.newPassword}
-                  onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
-                  placeholder="Minimum 8 caractères"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={passwordData.confirmPassword}
-                  onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
-                  placeholder="Répétez le nouveau mot de passe"
-                />
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="newPassword">Nouveau mot de passe</Label>
+              <Input
+                id="newPassword"
+                type="password"
+                value={passwordData.newPassword}
+                onChange={(e) => setPasswordData({...passwordData, newPassword: e.target.value})}
+                placeholder="Minimum 8 caractères"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                value={passwordData.confirmPassword}
+                onChange={(e) => setPasswordData({...passwordData, confirmPassword: e.target.value})}
+                placeholder="Répétez le nouveau mot de passe"
+              />
             </div>
 
             <Button 
@@ -308,7 +307,7 @@ export default function AdminAccountTab() {
         </Card>
 
         {/* Configuration email professionnel */}
-        <Card>
+        <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
