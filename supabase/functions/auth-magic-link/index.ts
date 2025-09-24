@@ -108,54 +108,56 @@ async function sendMagicLinkEmail(email: string, token: string, spaceName: strin
     const emailContent = {
       from: `${config.from.name} <${config.from.address}>`,
       to: email,
-      subject: `🔑 Accès à votre espace "${spaceName}" - Ooblik S3 Manager`,
+      subject: `Accès à votre espace "${spaceName}" - Ooblik S3 Manager`,
       html: `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <title>Accès sécurisé - Ooblik</title>
 </head>
-<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
-  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
-    <h1 style="margin: 0; font-size: 24px;">🔑 Accès sécurisé</h1>
-    <p style="margin: 10px 0 0 0; opacity: 0.9;">Votre lien d'accès est prêt</p>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #ffffff; color: #374151;">
+  
+  <div style="text-align: center; margin-bottom: 40px;">
+    <h1 style="margin: 0; font-size: 24px; font-weight: 600; color: #111827;">Ooblik S3 Manager</h1>
+    <p style="margin: 8px 0 0 0; color: #6b7280; font-size: 14px;">Accédez à votre espace de transfert sécurisé</p>
   </div>
   
-  <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-    <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
-      Bonjour ! Voici votre lien d'accès sécurisé pour l'espace <strong>"${spaceName}"</strong>.
+  <div style="margin-bottom: 32px;">
+    <p style="font-size: 16px; color: #374151; margin: 0 0 20px 0; line-height: 1.5;">
+      Bonjour,<br><br>
+      Voici votre lien d'accès sécurisé pour l'espace <strong>"${spaceName}"</strong>.
     </p>
     
-    <div style="text-align: center; margin: 30px 0;">
+    <div style="text-align: center; margin: 32px 0;">
       <a href="${magicLink}" 
-         style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
-        🚀 Accéder à mon espace
+         style="display: inline-block; background: #dc2626; color: white; padding: 12px 24px; text-decoration: none; font-weight: 500; font-size: 14px; border: 1px solid #dc2626;">
+        Recevoir le lien d'accès
       </a>
     </div>
-    
-    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; margin: 25px 0;">
-      <h3 style="margin-top: 0; color: #28a745; font-size: 14px;">ℹ️ Informations importantes :</h3>
-      <ul style="color: #666; line-height: 1.6; font-size: 14px; margin: 10px 0; padding-left: 20px;">
-        <li>Ce lien est valide pendant <strong>6 heures</strong></li>
-        <li>Il ne peut être utilisé qu'une seule fois</li>
-        <li>Gardez ce lien confidentiel</li>
-        <li>Aucune installation requise, tout fonctionne dans votre navigateur</li>
-      </ul>
-    </div>
-    
-    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
-      <p style="margin: 0; font-size: 13px; color: #856404;">
-        📧 Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité.
-      </p>
-    </div>
-    
-    <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;">
-    
-    <p style="font-size: 12px; color: #999; text-align: center; margin: 15px 0 0 0;">
-      Ooblik S3 Manager - Plateforme sécurisée de transfert de fichiers<br>
-      <a href="${magicLink}" style="color: #667eea; text-decoration: none;">Lien direct : ${magicLink}</a>
+  </div>
+  
+  <div style="border: 1px solid #e5e7eb; padding: 20px; margin: 32px 0;">
+    <h3 style="margin: 0 0 16px 0; color: #374151; font-size: 14px; font-weight: 600;">Informations importantes :</h3>
+    <ul style="color: #6b7280; line-height: 1.6; font-size: 14px; margin: 0; padding-left: 20px;">
+      <li style="margin-bottom: 4px;">Ce lien est valide pendant 6 heures</li>
+      <li style="margin-bottom: 4px;">Il ne peut être utilisé qu'une seule fois</li>
+      <li style="margin-bottom: 4px;">Gardez ce lien confidentiel</li>
+      <li style="margin-bottom: 4px;">Aucune installation requise</li>
+    </ul>
+  </div>
+  
+  <div style="border: 1px solid #fbbf24; background: #fffbeb; padding: 16px; margin: 24px 0;">
+    <p style="margin: 0; font-size: 13px; color: #92400e;">
+      Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité.
     </p>
   </div>
+  
+  <div style="border-top: 1px solid #e5e7eb; padding-top: 20px; margin-top: 32px;">
+    <p style="font-size: 12px; color: #9ca3af; text-align: center; margin: 0;">
+      Ooblik S3 Manager - Plateforme sécurisée de transfert de fichiers
+    </p>
+  </div>
+  
 </body>
 </html>`
     };
