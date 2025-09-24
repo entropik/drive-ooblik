@@ -39,7 +39,7 @@ async function verifyHCaptcha(token: string): Promise<boolean> {
   }
 }
 
-async function sendMagicLinkEmail(email: string, token: string, spaceName: string) {
+async function sendMagicLinkEmail(email: string, token: string, spaceName: string): Promise<boolean> {
   try {
     // Récupération de la config SMTP
     const { data: smtpConfig } = await supabase
@@ -49,27 +49,98 @@ async function sendMagicLinkEmail(email: string, token: string, spaceName: strin
       .single();
 
     if (!smtpConfig?.value) {
-      throw new Error('Configuration SMTP manquante');
+      console.warn('Configuration SMTP manquante, lien affiché uniquement');
+      return false;
     }
 
     const config = smtpConfig.value as any;
     const magicLink = `${Deno.env.get('SUPABASE_URL')}/functions/v1/auth-consume?token=${token}`;
     
-    // Pour le moment, on log le lien magic (en prod, utilisez un service d'email)
-    console.log(`Magic link pour ${email} (espace: ${spaceName}): ${magicLink}`);
+    console.log(`Envoi magic link pour ${email} (espace: ${spaceName})`);
     
-    // TODO: Implémenter l'envoi d'email réel avec Nodemailer ou Resend
-    // const transporter = nodemailer.createTransporter(config);
-    // await transporter.sendMail({
-    //   from: config.user,
-    //   to: email,
-    //   subject: `Accès à votre espace ${spaceName}`,
-    //   html: `<p>Cliquez <a href="${magicLink}">ici</a> pour accéder à votre espace.</p>`
-    // });
+    // Utiliser nodemailer avec la configuration SMTP
+    const nodemailer = await import('npm:nodemailer@6.9.7');
+    
+    const createTransport = (nodemailer as any).createTransport || (nodemailer as any).default?.createTransport;
+    if (!createTransport) {
+      throw new Error('Nodemailer createTransport not available');
+    }
+    
+    const transporter = createTransport({
+      host: config.host,
+      port: config.port,
+      secure: config.secure,
+      auth: {
+        user: config.auth.user,
+        pass: config.auth.pass,
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
+    });
 
+    const emailContent = {
+      from: `${config.from.name} <${config.from.address}>`,
+      to: email,
+      subject: `🔑 Accès à votre espace "${spaceName}" - Ooblik S3 Manager`,
+      html: `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Accès sécurisé - Ooblik</title>
+</head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f5f5f5;">
+  <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+    <h1 style="margin: 0; font-size: 24px;">🔑 Accès sécurisé</h1>
+    <p style="margin: 10px 0 0 0; opacity: 0.9;">Votre lien d'accès est prêt</p>
+  </div>
+  
+  <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+    <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
+      Bonjour ! Voici votre lien d'accès sécurisé pour l'espace <strong>"${spaceName}"</strong>.
+    </p>
+    
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${magicLink}" 
+         style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px 30px; text-decoration: none; border-radius: 25px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+        🚀 Accéder à mon espace
+      </a>
+    </div>
+    
+    <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #28a745; margin: 25px 0;">
+      <h3 style="margin-top: 0; color: #28a745; font-size: 14px;">ℹ️ Informations importantes :</h3>
+      <ul style="color: #666; line-height: 1.6; font-size: 14px; margin: 10px 0; padding-left: 20px;">
+        <li>Ce lien est valide pendant <strong>24 heures</strong></li>
+        <li>Il ne peut être utilisé qu'une seule fois</li>
+        <li>Gardez ce lien confidentiel</li>
+        <li>Aucune installation requise, tout fonctionne dans votre navigateur</li>
+      </ul>
+    </div>
+    
+    <div style="background: #fff3cd; padding: 15px; border-radius: 8px; border-left: 4px solid #ffc107;">
+      <p style="margin: 0; font-size: 13px; color: #856404;">
+        📧 Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en toute sécurité.
+      </p>
+    </div>
+    
+    <hr style="border: none; border-top: 1px solid #eee; margin: 25px 0;">
+    
+    <p style="font-size: 12px; color: #999; text-align: center; margin: 15px 0 0 0;">
+      Ooblik S3 Manager - Plateforme sécurisée de transfert de fichiers<br>
+      <a href="${magicLink}" style="color: #667eea; text-decoration: none;">Lien direct : ${magicLink}</a>
+    </p>
+  </div>
+</body>
+</html>`
+    };
+
+    await transporter.sendMail(emailContent);
+    console.log(`✅ Email envoyé avec succès à ${email}`);
+    
     return true;
+    
   } catch (error) {
-    console.error('Erreur envoi email:', error);
+    console.error('❌ Erreur envoi email:', error);
     return false;
   }
 }
@@ -86,10 +157,30 @@ serve(async (req: Request) => {
   try {
     const { email, space_name, hcaptcha_token }: MagicLinkRequest = await req.json();
 
-    if (!email || !space_name) {
+    // Validation email plus stricte
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
       return new Response(
-        JSON.stringify({ error: 'Email et nom d\'espace requis' }),
+        JSON.stringify({ error: 'Format d\'email invalide' }),
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Limitation de taux par IP (max 5 tentatives par heure)
+    const clientIP = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const hourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    
+    const { count } = await supabase
+      .from('logs')
+      .select('*', { count: 'exact', head: true })
+      .eq('event_type', 'auth')
+      .eq('ip_address', clientIP)
+      .gte('created_at', hourAgo.toISOString());
+
+    if (count && count >= 5) {
+      return new Response(
+        JSON.stringify({ error: 'Trop de tentatives. Réessayez dans une heure.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
