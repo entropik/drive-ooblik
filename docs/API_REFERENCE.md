@@ -37,6 +37,13 @@ Note: For production, prefer storing secrets in environment variables. Examples 
 }
 ```
 - Error codes: `400` invalid email/captcha, `429` rate limited, `500` server error
+- Rate limiting: **5 tentatives par heure par IP**
+  - Headers de réponse en cas de rate limiting:
+    - `X-RateLimit-Limit: 5`
+    - `X-RateLimit-Remaining: 0`
+    - `X-RateLimit-Reset: <timestamp>`
+    - `Retry-After: 3600` (secondes)
+  - Stratégie de retry recommandée: Exponential backoff avec délai initial de 60s
 
 Example:
 ```bash
@@ -289,4 +296,92 @@ Refer to the component files for prop interfaces where defined (e.g., `ButtonPro
 - Magic tokens are hashed at rest; only session tokens are used post-auth.
 - Rate limiting and captcha verification are implemented in `auth-magic-link`.
 - Admin endpoints require a valid admin session (cookie or Bearer/custom header).
+
+## Performance & SLA
+
+### Temps de réponse attendus
+
+| Endpoint | P50 | P95 | P99 | Timeout |
+|----------|-----|-----|-----|---------|
+| `auth-magic-link` | 150ms | 400ms | 800ms | 30s |
+| `auth-consume` | 100ms | 250ms | 500ms | 30s |
+| `upload-init` | 200ms | 500ms | 1s | 30s |
+| `admin-auth` | 100ms | 300ms | 600ms | 30s |
+| `admin-config` | 80ms | 200ms | 400ms | 30s |
+| `test-smtp` | 2s | 5s | 10s | 30s |
+
+### Service Level Agreement (SLA)
+
+#### Disponibilité
+- **Cible**: 99.9% de disponibilité mensuelle
+- **Fenêtre de maintenance**: Dimanche 2h-4h UTC
+- **Monitoring**: Healthcheck toutes les 5 minutes
+
+#### Limites de service
+- **Taille maximale de fichier**: 5 GB
+- **Uploads simultanés par session**: 10
+- **Durée de session utilisateur**: 4 heures
+- **Durée de session admin**: Configurable (défaut: 24h)
+- **Expiration magic link**: 6 heures
+- **Rate limiting**:
+  - Auth: 5 tentatives/heure/IP
+  - Upload: 100 requêtes/minute/session
+  - Admin: 1000 requêtes/heure
+
+#### Capacité
+- **Utilisateurs simultanés**: 10,000
+- **Uploads par jour**: 100,000
+- **Stockage total**: Selon configuration S3
+- **Bande passante**: Selon limites Supabase/S3
+
+### Métriques de monitoring
+
+#### Métriques clés (KPIs)
+1. **Taux de succès authentification**: >95%
+2. **Temps médian auth-magic-link**: <200ms
+3. **Taux d'erreur global**: <1%
+4. **Utilisation CPU Edge Functions**: <70%
+5. **Latence P95 base de données**: <100ms
+
+#### Alertes configurées
+- Taux d'erreur >5% sur 5 minutes
+- Temps de réponse P95 >2x la normale
+- Échecs SMTP consécutifs >10
+- Sessions actives >90% de la limite
+- Espace disque <10% disponible
+
+### Optimisations recommandées
+
+#### Cache
+- Headers Cache-Control sur assets statiques
+- CDN pour fichiers uploadés fréquemment consultés
+- Cache Redis pour sessions (optionnel)
+
+#### Base de données
+- Index sur colonnes de recherche fréquentes
+- Partitionnement de la table `logs` par mois
+- VACUUM automatique hebdomadaire
+- Analyse des requêtes lentes via `pg_stat_statements`
+
+#### Scalabilité
+- Load balancer pour répartition du trafic
+- Auto-scaling des Edge Functions selon charge
+- Réplication read-only pour requêtes de lecture
+- Queue asynchrone pour envois d'emails en masse
+
+### Dégradation gracieuse
+
+En cas de surcharge:
+1. **Mode lecture seule**: Désactivation temporaire des uploads
+2. **Queue d'attente**: File d'attente pour nouveaux utilisateurs
+3. **Limitation progressive**: Réduction des limites par utilisateur
+4. **Cache agressif**: Augmentation TTL du cache
+
+### Backup & Recovery
+
+- **RPO (Recovery Point Objective)**: 1 heure
+- **RTO (Recovery Time Objective)**: 4 heures
+- **Backups automatiques**: Toutes les 6 heures
+- **Rétention**: 30 jours
+- **Test de restauration**: Mensuel
 
