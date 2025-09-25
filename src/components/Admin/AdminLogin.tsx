@@ -5,6 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
 import { Lock, User } from "lucide-react";
+import { sessionManager } from "@/services/sessionManager";
 
 interface AdminLoginProps {
   onSuccess: () => void;
@@ -26,26 +27,14 @@ const AdminLogin = ({ onSuccess }: AdminLoginProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/admin-auth`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
-        },
-        body: JSON.stringify({ username, password })
-      });
+      const success = await sessionManager.loginAdmin(username, password);
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || 'Erreur de connexion');
+      if (success) {
+        toast.success("Connexion réussie");
+        onSuccess();
+      } else {
+        throw new Error('Identifiants invalides');
       }
-
-      toast.success("Connexion réussie");
-      if (data?.token) {
-        localStorage.setItem('admin_session', data.token);
-      }
-      onSuccess();
 
     } catch (error) {
       console.error('Erreur login admin:', error);

@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner";
 import { Mail, Shield, Upload, CheckCircle, AlertCircle } from "lucide-react";
 import HCaptcha from '@hcaptcha/react-hcaptcha';
+import { apiService } from "@/services/api";
 
 interface MagicLinkFormProps {
   onSuccess: (data: { email: string; space_name: string; token?: string }) => void;
@@ -20,7 +21,7 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
   const captchaRef = useRef<HCaptcha | null>(null);
 
   // Clé publique hCaptcha - configurée via les variables d'environnement
-  const HCAPTCHA_SITE_KEY = "10000000-ffff-ffff-ffff-000000000001"; // Test key for development - replace with your real key in production
+  const HCAPTCHA_SITE_KEY = import.meta.env.VITE_HCAPTCHA_SITE_KEY || "10000000-ffff-ffff-ffff-000000000001";
 
   const handleCaptchaVerify = (token: string) => {
     setCaptchaToken(token);
@@ -67,32 +68,11 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/auth-magic-link`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
-        },
-        body: JSON.stringify({
-          email: email.trim().toLowerCase(),
-          space_name: spaceName.trim(),
-          hcaptcha_token: captchaToken || 'dev-token'
-        })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        if (response.status === 429) {
-          toast.error("Trop de tentatives. Réessayez dans une heure.", {
-            icon: <AlertCircle className="h-4 w-4" />,
-            duration: 5000
-          });
-        } else {
-          throw new Error(data.error || 'Erreur lors de la demande');
-        }
-        return;
-      }
+      const data = await apiService.sendMagicLink(
+        email,
+        spaceName,
+        captchaToken || 'dev-token'
+      );
 
       setEmailSent(true);
       
@@ -132,10 +112,20 @@ const MagicLinkForm = ({ onSuccess }: MagicLinkFormProps) => {
 
     } catch (error) {
       console.error('Erreur magic link:', error);
+
+      let errorMessage = "Erreur lors de l'envoi";
+      if (error instanceof Error) {
+        if (error.message.includes('429') || error.message.includes('trop de tentatives')) {
+          errorMessage = "Trop de tentatives. Réessayez dans une heure.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
       toast.error(
         <div className="flex items-center gap-2">
           <AlertCircle className="h-4 w-4" />
-          <span>{error instanceof Error ? error.message : "Erreur lors de l'envoi"}</span>
+          <span>{errorMessage}</span>
         </div>,
         { duration: 5000 }
       );
