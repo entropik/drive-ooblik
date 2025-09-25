@@ -1,73 +1,88 @@
-# Welcome to your Lovable project
+## Drive ooblik — Plateforme de transfert de fichiers
 
-## Project info
+Application React (Vite + TypeScript + shadcn-ui + Tailwind) avec fonctions Edge Supabase pour l’authentification par lien magique, la gestion d’uploads et un back‑office administrateur.
 
-**URL**: https://lovable.dev/projects/2a6e92db-f750-4f00-b532-ae0113580339
+### Fonctionnalités
+- Authentification sans mot de passe via lien magique (hCaptcha + limitation de taux)
+- Session sécurisée (token de session côté serveur, 4h)
+- Initialisation d’upload avec schéma de nommage S3 configurable
+- Back‑office admin: connexion, vérification de session, configuration (SMTP, S3, naming), test SMTP
+- Composants UI réutilisables (shadcn-ui)
 
-## How can I edit this code?
+### Prérequis
+- Node.js 18+ et npm
+- Un projet Supabase (URL + clés) et tables/fonctions correspondantes
 
-There are several ways of editing your application.
-
-**Use Lovable**
-
-Simply visit the [Lovable Project](https://lovable.dev/projects/2a6e92db-f750-4f00-b532-ae0113580339) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+### Installation
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+Scripts disponibles:
+- `npm run dev`: lancer le serveur Vite
+- `npm run build`: build de production
+- `npm run build:dev`: build en mode développement
+- `npm run preview`: prévisualiser le build
+- `npm run lint`: linting
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Configuration Supabase
+Le client Supabase est exposé via `src/integrations/supabase/client.ts`. En développement, l’URL et la clé anon sont codées en dur. En production, configurez des variables d’environnement côté Edge Functions et utilisez des mécanismes sécurisés pour éviter d’exposer des secrets côté client.
 
-**Use GitHub Codespaces**
+Fonctions Edge exposées:
+- `auth-magic-link` (POST) — génère et envoie un lien
+- `auth-consume` (GET) — consomme le lien et crée une session, redirige vers le frontend
+- `upload-init` (POST) — initialise un upload avec un `x-session-token`
+- `admin-auth` (POST/GET) — login, logout, verify
+- `admin-config` (POST) — get/save configuration
+- `admin-update` (POST) — mise à jour email/mot de passe admin
+- `test-smtp`, `session-cleanup`, `cleanup-expired-tokens`
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Voir la documentation détaillée: `docs/API_REFERENCE.md`.
 
-## What technologies are used for this project?
+### Démarrage rapide (Frontend)
+Exemple de formulaire d’accès public:
+```tsx
+import MagicLinkForm from "@/components/Public/MagicLinkForm";
 
-This project is built with:
+export default function Acces() {
+  return <MagicLinkForm onSuccess={(d) => console.log(d)} />;
+}
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Exemple d’upload après redirection (avec token de session):
+```tsx
+import FileUploadZone from "@/components/Public/FileUploadZone";
 
-## How can I deploy this project?
+export default function Upload() {
+  const params = new URLSearchParams(window.location.search);
+  const session = params.get('session') || '';
+  return <FileUploadZone sessionToken={session} onComplete={(files) => console.log(files)} />;
+}
+```
 
-Simply open [Lovable](https://lovable.dev/projects/2a6e92db-f750-4f00-b532-ae0113580339) and click on Share -> Publish.
+### Arborescence
+```
+src/
+  components/
+    Public/ (MagicLinkForm, FileUploadZone)
+    Layout/ (AdminLayout)
+    ui/ (... shadcn-ui)
+  hooks/ (use-mobile, use-toast)
+  integrations/supabase/ (client, types)
+  lib/ (utils)
+supabase/functions/ (... Edge Functions)
+docs/API_REFERENCE.md
+```
 
-## Can I connect a custom domain to my Lovable project?
+### Déploiement
+- Frontend: build Vite (`npm run build`) puis hébergement statique
+- Fonctions Edge: via Supabase (CLI/Studio). Assurez-vous que les variables d’environnement (SUPABASE_URL, SERVICE_ROLE_KEY, HCAPTCHA_SECRET, etc.) sont bien définies.
 
-Yes, you can!
+### Sécurité
+- Les tokens « magic » sont hashés en base et invalidés après usage
+- Seul le token de session est utilisé côté client après authentification
+- Les endpoints admin nécessitent une session valide
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+### Journal des changements
+Consultez `CHANGELOG.md`.
