@@ -1,0 +1,65 @@
+# Dockerignore pour optimiser le build
+
+# Dépendances
+node_modules/
+*/node_modules/
+backend/node_modules/
+
+# Build artifacts
+dist/
+build/
+*.log
+logs/
+
+# Development
+.env.local
+.env.*.local
+*.local
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+.github/
+
+# Documentation
+*.md
+docs/
+deploy/
+!docker/
+
+# Tests
+coverage/
+.nyc_output/
+*.test.js
+*.spec.js
+__tests__/
+
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Editor files
+*.sublime*
+.history/
+
+# Supabase (ancien)
+supabase/
+
+# Cache
+.cache/
+.parcel-cache/
+.eslintcache
+
+# Build tools
+.npm/
+.yarn/
+.pnp.*
