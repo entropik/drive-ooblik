@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
 import { Upload, File, CheckCircle, XCircle, RefreshCw, Trash2 } from "lucide-react";
+import { apiService } from "@/services/api";
 
 interface UploadFile {
   id: string;
@@ -62,23 +63,13 @@ const FileUploadZone = ({ sessionToken, onComplete }: FileUploadZoneProps) => {
         f.id === fileId ? { ...f, status: 'uploading' } : f
       ));
 
-      const initResponse = await fetch(`https://khygjfhrmnwtigqtdmgm.supabase.co/functions/v1/upload-init`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtoeWdqZmhybW53dGlncXRkbWdtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTg2MzUwNDUsImV4cCI6MjA3NDIxMTA0NX0.iTtQEbCcScU_da3Micct9Y13_Obl8KVBa8M7FkHzIww',
-          'x-session-token': sessionToken // Use secure session token instead of magic token
-        },
-        body: JSON.stringify({
-          filename: file.file.name,
-          file_size: file.file.size,
-          mime_type: file.file.type
-        })
-      });
-
-      const initData = await initResponse.json();
+      const initData = await apiService.initUpload(
+        file.file.name,
+        file.file.size,
+        file.file.type
+      );
       
-      if (!initResponse.ok) {
+      if (!initData.success) {
         throw new Error(initData.error || 'Erreur lors de l\'initialisation');
       }
 
