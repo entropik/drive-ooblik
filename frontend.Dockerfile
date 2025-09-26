@@ -40,13 +40,11 @@ RUN mkdir -p /var/log/nginx /var/cache/nginx /var/run/nginx
 # Copier les fichiers buildés depuis le stage builder
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copier un script de démarrage personnalisé
-COPY docker/start-nginx.sh /start-nginx.sh
-RUN chmod +x /start-nginx.sh
+# Script de démarrage non nécessaire - on utilise nginx directement
 
-# Créer utilisateur non-root
-RUN addgroup -g 101 -S nginx
-RUN adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx
+# L'utilisateur nginx existe déjà dans l'image nginx:alpine
+# On vérifie juste qu'il existe
+RUN id nginx || (addgroup -g 101 -S nginx && adduser -S -D -H -u 101 -h /var/cache/nginx -s /sbin/nologin -G nginx -g nginx nginx)
 
 # Ajuster les permissions
 RUN chown -R nginx:nginx /var/log/nginx /var/cache/nginx /var/run/nginx /usr/share/nginx/html
@@ -59,8 +57,6 @@ EXPOSE 80 443
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD wget --no-verbose --tries=1 --spider http://localhost:80/ || exit 1
 
-# Passer à l'utilisateur non-root
-USER nginx
-
-# Démarrer Nginx
-CMD ["/start-nginx.sh"]
+# Démarrer Nginx directement sans passer par un script
+# On reste en root pour nginx (standard pour les containers nginx)
+CMD ["nginx", "-g", "daemon off;"]

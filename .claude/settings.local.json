@@ -6,7 +6,11 @@
       "Bash(git push:*)",
       "Bash(git checkout:*)",
       "Bash(git merge:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(openssl rand:*)",
+      "Bash(findstr:*)",
+      "Bash(dir:*)",
+      "Bash(npm install)"
     ],
     "deny": [],
     "ask": []
