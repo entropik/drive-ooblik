@@ -13,7 +13,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
-    networks: [drive-ooblik-network]
+    networks:
+      - drive-ooblik-network
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-ooblik} -d ${DB_NAME:-drive_ooblik}"]
       interval: 10s
@@ -37,7 +38,6 @@ services:
       # Backend
       NODE_ENV: production
       PORT: 3001
-      # URL publique (via CloudPanel) — on fera /api sur le même domaine
       API_BASE_URL: ${API_BASE_URL:-https://fichiers.ooblik.com/api}
       FRONTEND_URL: ${FRONTEND_URL:-https://fichiers.ooblik.com}
 
@@ -46,7 +46,7 @@ services:
       JWT_EXPIRES_IN: 4h
       JWT_ADMIN_EXPIRES_IN: 24h
 
-      # Security
+      # Security / limits
       BCRYPT_ROUNDS: 12
       RATE_LIMIT_WINDOW_MS: 3600000
       RATE_LIMIT_MAX_REQUESTS: 5
@@ -58,7 +58,7 @@ services:
       SMTP_USER: ${SMTP_USER}
       SMTP_PASS: ${SMTP_PASS}
 
-      # S3 (optionnel - configurés ensuite dans le backoffice)
+      # S3 (optionnel, tu les règles via backoffice ensuite)
       S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
       S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
       S3_REGION: ${S3_REGION:-eu-west-1}
@@ -71,17 +71,18 @@ services:
       postgres:
         condition: service_healthy
 
-    # On publie l’API en local seulement (CloudPanel fera le proxy)
+    # exposée en local pour CloudPanel
     ports:
       - "127.0.0.1:3101:3001"
 
     volumes:
       - app_logs:/app/logs
 
-    networks: [drive-ooblik-network]
+    networks:
+      - drive-ooblik-network
 
     healthcheck:
-      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => process.exit(1))"]
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:3001/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -92,30 +93,27 @@ services:
       context: .
       dockerfile: frontend.Dockerfile
       args:
-        # le front appellera /api sur le même domaine
         VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api}
         VITE_HCAPTCHA_SITE_KEY: ${VITE_HCAPTCHA_SITE_KEY:-10000000-ffff-ffff-ffff-000000000001}
         VITE_DEV_MODE: ${VITE_DEV_MODE:-false}
     container_name: drive-ooblik-web
     restart: unless-stopped
-    depends_on: [api]
+    depends_on:
+      - api
 
-    # On publie le front en local seulement (CloudPanel fera le proxy)
+    # exposée en local pour CloudPanel
     ports:
       - "127.0.0.1:3100:80"
 
-    networks: [drive-ooblik-network]
+    networks:
+      - drive-ooblik-network
 
-healthcheck:
-  test: ["CMD-SHELL", "wget -q --spider http://localhost:80/index.html || exit 1"]
-  interval: 30s
-  timeout: 10s
-  retries: 3
-  start_period: 20s
-
-
-# ⚠️ On supprime le service nginx interne: CloudPanel gère déjà le reverse proxy + SSL
-# (si tu veux le garder un jour, remets-le et change les ports pour éviter 80/443)
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:80/index.html || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
 
 volumes:
   postgres_data:
