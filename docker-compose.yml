@@ -75,8 +75,8 @@ services:
       postgres:
         condition: service_healthy
 
-    expose:
-      - "3001"
+    ports:
+      - "${API_PORT:-3001}:3001"
 
     volumes:
       - app_logs:/app/logs
