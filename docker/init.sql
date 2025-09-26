@@ -115,11 +115,11 @@ CREATE INDEX IF NOT EXISTS idx_admin_sessions_token ON admin_sessions(session_to
 CREATE INDEX IF NOT EXISTS idx_admin_sessions_expires ON admin_sessions(expires_at);
 
 -- Créer un utilisateur admin par défaut (mot de passe: admin123)
--- Le hash correspond à bcrypt('admin123') avec 10 rounds
+-- Le hash correspond à bcrypt('admin123') avec 12 rounds
 INSERT INTO admin_users (username, password_hash, email, is_active)
 VALUES (
   'admin',
-  '$2b$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy',
+  '$2b$12$3XYXhFk3rUfXz6QVtYfMD.zHJLW7mLlHxE/1VrSiebe7K3QQ0FO.a',
   'admin@example.com',
   true
 )
